@@ -29,6 +29,15 @@ format: deps
 	@echo "--> Running go fmt"
 	@go fmt ./...
 
+docker: export GOPATH=${PWD}/Godeps/_workspace:${PWD}/../../../..
+docker: export GOOS=linux
+docker: export GOARCH=amd64
+docker:
+	@mkdir -p bin/
+	@echo "--> Running go build (linux, amd64)"
+	@go build -v -o bin/microzon-auth github.com/leanovate/microzon-auth-go
+	@docker build -t microzon-auth .
+
 vet: export GOPATH=${PWD}/Godeps/_workspace:${PWD}/../../../..
 vet:
 	@go tool vet 2>/dev/null ; if [ $$? -eq 3 ]; then \
