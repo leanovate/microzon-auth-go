@@ -6,10 +6,8 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/base64"
-	"encoding/pem"
 	"math"
 	"math/big"
-	"os"
 	"time"
 )
 
@@ -55,12 +53,6 @@ func NewCertWithKey(name string) (*CertWithKey, error) {
 	cert, err := x509.ParseCertificate(certRaw)
 	if err != nil {
 		return nil, err
-	}
-
-	if pkixPub, err := x509.MarshalPKIXPublicKey(privateKey.Public()); err == nil {
-		pem.Encode(os.Stdout, &pem.Block{Type: "PUBLIC KEY", Bytes: pkixPub})
-		pem.Encode(os.Stdout, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)})
-		pem.Encode(os.Stdout, &pem.Block{Type: "CERTIFCATE", Bytes: cert.Raw})
 	}
 
 	return &CertWithKey{
