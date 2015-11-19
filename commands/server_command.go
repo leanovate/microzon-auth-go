@@ -3,6 +3,7 @@ package commands
 import (
 	"github.com/codegangsta/cli"
 	"github.com/leanovate/microzon-auth-go/server"
+	"github.com/leanovate/microzon-auth-go/store"
 )
 
 // Start in server mode
@@ -13,7 +14,13 @@ var ServerCommand = cli.Command{
 }
 
 func serverCommand(ctx *cli.Context, runCtx *runContext) {
-	runCtx.server = server.NewServer(runCtx.config.Server, runCtx.logger)
+	store, err := store.NewStore(runCtx.logger)
+	if err != nil {
+		runCtx.logger.ErrorErr(err)
+		return
+	}
+
+	runCtx.server = server.NewServer(runCtx.config.Server, store, runCtx.logger)
 
 	if err := runCtx.server.Start(); err != nil {
 		runCtx.logger.ErrorErr(err)

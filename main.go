@@ -6,12 +6,14 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
 	"github.com/leanovate/microzon-auth-go/commands"
+	"github.com/leanovate/microzon-auth-go/config"
 )
 
 func main() {
 	app := cli.NewApp()
 	app.Name = "microzon-auth"
 	app.Usage = "Distributed authentication for microservices"
+	app.Version = config.Version()
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  "config-dir",

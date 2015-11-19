@@ -9,18 +9,21 @@ import (
 
 	"github.com/leanovate/microzon-auth-go/config"
 	"github.com/leanovate/microzon-auth-go/logging"
+	"github.com/leanovate/microzon-auth-go/store"
 	"github.com/untoldwind/routing"
 )
 
 type Server struct {
 	config   *config.ServerConfig
+	store    *store.Store
 	listener net.Listener
 	logger   logging.Logger
 }
 
-func NewServer(config *config.ServerConfig, logger logging.Logger) *Server {
+func NewServer(config *config.ServerConfig, store *store.Store, logger logging.Logger) *Server {
 	return &Server{
 		config: config,
+		store:  store,
 		logger: logger.WithContext(map[string]interface{}{"package": "server"}),
 	}
 }
@@ -54,6 +57,8 @@ func (s *Server) Stop() {
 func (s *Server) routeHandler() http.Handler {
 	return routing.NewRouteHandler(
 		routing.PrefixSeq("/v1",
+			s.TokensResource(),
+			s.CertificatesRoutes(),
 			s.InternalRoutes(),
 		),
 	)

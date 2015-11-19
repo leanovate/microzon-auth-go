@@ -3,12 +3,13 @@ PACKAGES = $(shell go list ./...)
 VETARGS?=-asmdecl -atomic -bool -buildtags -copylocks -methods \
          -nilfunc -printf -rangeloops -shift -structtags -unsafeptr
 DEPPATH = $(firstword $(subst :, , $(GOPATH)))
+VERSION = $(shell date -u +.%Y%m%d.%H%M%S)
 
 all: export GOPATH=${PWD}/Godeps/_workspace:${PWD}/../../../..
 all: deps format
 	@mkdir -p bin/
 	@echo "--> Running go build"
-	@go build -v -o bin/microzon-auth github.com/leanovate/microzon-auth-go
+	@go build -ldflags "-X github.com/leanovate/microzon-auth-go/config.versionMinor=${VERSION}" -v -o bin/microzon-auth github.com/leanovate/microzon-auth-go
 
 deps: export GOPATH=${PWD}/Godeps/_workspace:${PWD}/../../../..
 deps:
@@ -35,7 +36,7 @@ docker: export GOARCH=amd64
 docker:
 	@mkdir -p bin/
 	@echo "--> Running go build (linux, amd64)"
-	@go build -v -o bin/microzon-auth github.com/leanovate/microzon-auth-go
+	@go build -ldflags "-X github.com/leanovate/microzon-auth-go/config.versionMinor=${VERSION}" -v -o bin/microzon-auth github.com/leanovate/microzon-auth-go
 	@docker build -t microzon-auth .
 
 vet: export GOPATH=${PWD}/Godeps/_workspace:${PWD}/../../../..

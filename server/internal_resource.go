@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 
+	"github.com/leanovate/microzon-auth-go/config"
 	"github.com/leanovate/microzon-auth-go/logging"
 	"github.com/untoldwind/routing"
 )
@@ -31,6 +32,6 @@ func (s *Server) InternalRoutes() routing.Matcher {
 
 func (r *internalResource) Status(req *http.Request) (interface{}, error) {
 	return &StatusVO{
-		Version: "1",
+		Version: config.Version(),
 	}, nil
 }
