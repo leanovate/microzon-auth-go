@@ -1,5 +1,9 @@
 # microzon-auth-go
 
+## Issue Tracker
+
+See: [microzon-auth](https://github.com/leanovate/microzon-auth)
+
 ## Setup a development environment
 
 In go paths are important. Ensure that you checkout the project as described.
