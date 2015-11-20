@@ -41,7 +41,7 @@ func NewCertWithKey(name string) (*CertWithKey, error) {
 		},
 		PublicKey:             privateKey.PublicKey,
 		NotBefore:             time.Now(),
-		NotAfter:              time.Now().Add(10 * 365 * 24 * time.Hour),
+		NotAfter:              time.Now().Add(24 * time.Hour),
 		KeyUsage:              x509.KeyUsageCRLSign | x509.KeyUsageCertSign,
 		SubjectKeyId:          keyID,
 		BasicConstraintsValid: true,

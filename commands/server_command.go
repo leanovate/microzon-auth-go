@@ -3,7 +3,7 @@ package commands
 import (
 	"github.com/codegangsta/cli"
 	"github.com/leanovate/microzon-auth-go/server"
-	"github.com/leanovate/microzon-auth-go/store/memory_backend"
+	"github.com/leanovate/microzon-auth-go/store"
 )
 
 // Start in server mode
@@ -14,18 +14,20 @@ var ServerCommand = cli.Command{
 }
 
 func serverCommand(ctx *cli.Context, runCtx *runContext) {
-	store, err := memory_backend.NewMemoryStore(runCtx.logger)
+	store, err := store.NewStore(runCtx.config.Store, runCtx.logger)
 	if err != nil {
 		runCtx.logger.ErrorErr(err)
 		return
 	}
+	defer store.Close()
 
-	runCtx.server = server.NewServer(runCtx.config.Server, store, runCtx.logger)
+	server := server.NewServer(runCtx.config.Server, store, runCtx.logger)
 
-	if err := runCtx.server.Start(); err != nil {
+	if err := server.Start(); err != nil {
 		runCtx.logger.ErrorErr(err)
 		return
 	}
+	defer server.Stop()
 
 	runCtx.handleSignals()
 }

@@ -8,11 +8,9 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/leanovate/microzon-auth-go/config"
 	"github.com/leanovate/microzon-auth-go/logging"
-	"github.com/leanovate/microzon-auth-go/server"
 )
 
 type runContext struct {
-	server *server.Server
 	config *config.Config
 	logger logging.Logger
 }
@@ -50,7 +48,6 @@ func (c *runContext) handleSignals() int {
 		}
 
 		if shutdown {
-			c.server.Stop()
 			return 0
 		}
 	}

@@ -49,6 +49,7 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) Stop() {
+	s.logger.Info("Stopping http server ...")
 	if s.listener != nil {
 		s.listener.Close()
 	}

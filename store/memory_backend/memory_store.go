@@ -12,7 +12,10 @@ type memoryStore struct {
 	logger          logging.Logger
 }
 
-func NewMemoryStore(logger logging.Logger) (*memoryStore, error) {
+func NewMemoryStore(parent logging.Logger) (*memoryStore, error) {
+	logger := parent.WithContext(map[string]interface{}{"package": "store.memory_backend"})
+	logger.Info("Start store with memory backend...")
+
 	selfCert, err := certificates.NewCertWithKey("signer")
 	if err != nil {
 		return nil, err
@@ -20,7 +23,7 @@ func NewMemoryStore(logger logging.Logger) (*memoryStore, error) {
 	return &memoryStore{
 		selfCertificate: selfCert,
 		certifcatesMap:  map[string]*x509.Certificate{selfCert.Ski: selfCert.Certificate},
-		logger:          logger.WithContext(map[string]interface{}{"package": "store.memory"}),
+		logger:          logger,
 	}, nil
 }
 
@@ -42,4 +45,7 @@ func (s *memoryStore) CertificateBySKI(ski string) (*certificates.CertificateVO,
 		return certificates.NewCertificateVO(certificate), nil
 	}
 	return nil, nil
+}
+
+func (r *memoryStore) Close() {
 }

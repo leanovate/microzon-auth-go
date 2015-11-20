@@ -11,6 +11,7 @@ import (
 
 type Config struct {
 	Server    *ServerConfig
+	Store     *StoreConfig
 	configDir string
 }
 
@@ -22,6 +23,7 @@ func NewConfig(configDir string, logger logging.Logger) (*Config, error) {
 
 	config := Config{
 		Server:    NewServerConfig(),
+		Store:     NewStoreConfig(logger),
 		configDir: absoluteConfigDir,
 	}
 	files, err := ioutil.ReadDir(absoluteConfigDir)
@@ -37,7 +39,14 @@ func NewConfig(configDir string, logger logging.Logger) (*Config, error) {
 			if err != nil {
 				return nil, err
 			}
+		case !file.IsDir() && strings.HasPrefix(file.Name(), "store."):
+			var err error
+			config.Store, err = readStoreConfig(path.Join(absoluteConfigDir, file.Name()))
+			if err != nil {
+				return nil, err
+			}
 		}
+
 	}
 
 	return &config, nil

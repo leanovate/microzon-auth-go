@@ -6,7 +6,7 @@ DEPPATH = $(firstword $(subst :, , $(GOPATH)))
 VERSION = $(shell date -u +.%Y%m%d.%H%M%S)
 
 all: export GOPATH=${PWD}/Godeps/_workspace:${PWD}/../../../..
-all: deps format
+all: format
 	@mkdir -p bin/
 	@echo "--> Running go build"
 	@go build -ldflags "-X github.com/leanovate/microzon-auth-go/config.versionMinor=${VERSION}" -v -o bin/microzon-auth github.com/leanovate/microzon-auth-go
