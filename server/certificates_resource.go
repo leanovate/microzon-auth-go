@@ -3,14 +3,13 @@ package server
 import (
 	"net/http"
 
-	"github.com/leanovate/microzon-auth-go/certificates"
 	"github.com/leanovate/microzon-auth-go/logging"
 	"github.com/leanovate/microzon-auth-go/store"
 	"github.com/untoldwind/routing"
 )
 
 type certificatesResource struct {
-	store  *store.Store
+	store  store.Store
 	logger logging.Logger
 }
 
@@ -35,20 +34,18 @@ func (s *Server) CertificatesRoutes() routing.Matcher {
 }
 
 func (r *certificatesResource) QueryCertificates(req *http.Request) (interface{}, error) {
-	result := []*certificates.CertificateVO{}
-
-	for _, certificate := range r.store.Certificates {
-		result = append(result, certificates.NewCertificateVO(certificate))
-	}
-
-	return result, nil
+	return r.store.AllCertificates()
 }
 
 func (r *certificatesResource) GetCertBySki(ski string) func(req *http.Request) (interface{}, error) {
 	return func(req *http.Request) (interface{}, error) {
-		if cert, ok := r.store.Certificates[ski]; ok {
-			return cert, nil
+		cert, err := r.store.CertificateBySKI(ski)
+		if err != nil {
+			return nil, err
 		}
-		return nil, NotFound()
+		if cert == nil {
+			return nil, NotFound()
+		}
+		return cert, nil
 	}
 }

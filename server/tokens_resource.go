@@ -9,7 +9,7 @@ import (
 )
 
 type tokensResource struct {
-	store  *store.Store
+	store  store.Store
 	logger logging.Logger
 }
 
@@ -27,5 +27,9 @@ func (s *Server) TokensResource() routing.Matcher {
 }
 
 func (r *tokensResource) CreateToken(req *http.Request) (interface{}, error) {
-	return tokens.NewToken(r.store.SelfCertificate)
+	selfCert, err := r.store.SelfCerificate()
+	if err != nil {
+		return nil, err
+	}
+	return tokens.NewToken(selfCert)
 }

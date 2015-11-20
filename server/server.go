@@ -15,12 +15,12 @@ import (
 
 type Server struct {
 	config   *config.ServerConfig
-	store    *store.Store
+	store    store.Store
 	listener net.Listener
 	logger   logging.Logger
 }
 
-func NewServer(config *config.ServerConfig, store *store.Store, logger logging.Logger) *Server {
+func NewServer(config *config.ServerConfig, store store.Store, logger logging.Logger) *Server {
 	return &Server{
 		config: config,
 		store:  store,
