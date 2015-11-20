@@ -11,7 +11,6 @@ all: deps format
 	@echo "--> Running go build"
 	@go build -ldflags "-X github.com/leanovate/microzon-auth-go/config.versionMinor=${VERSION}" -v -o bin/microzon-auth github.com/leanovate/microzon-auth-go
 
-deps: export GOPATH=${PWD}/Godeps/_workspace:${PWD}/../../../..
 deps:
 	@echo "--> Installing build dependencies"
 	@go get -d -v ./... $(DEPS)

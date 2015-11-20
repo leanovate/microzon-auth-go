@@ -24,6 +24,14 @@ In go paths are important. Ensure that you checkout the project as described.
 5. Just use `make`.
 6. If you want to use an IDE like IntelliJ (with its go plugin). Use `$HOME/workspaces/microzon` as project root.
 
+## Useful commands
+* test the application:
+  ```curl localhost:8080/v1/certificates```
+  ```curl localhost:8080/v1/certificates | jq -r .[0].ski```
+  ```curl localhost:8080/v1/certificates/<ski>```
+* run server as docker:
+  ```make docker && docker run -ti --rm -p 8080:8080 microzon-auth```
+
 ## License
 
 [MIT Licence](http://opensource.org/licenses/MIT)

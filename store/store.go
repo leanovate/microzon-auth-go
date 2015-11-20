@@ -9,7 +9,7 @@ import (
 
 type Store struct {
 	SelfCertificate *certificates.CertWithKey
-	Certificates    []*x509.Certificate
+	Certificates    map[string]*x509.Certificate
 	logger          logging.Logger
 }
 
@@ -20,7 +20,7 @@ func NewStore(logger logging.Logger) (*Store, error) {
 	}
 	return &Store{
 		SelfCertificate: selfCert,
-		Certificates:    []*x509.Certificate{selfCert.Certificate},
+		Certificates:    map[string]*x509.Certificate{selfCert.Ski: selfCert.Certificate},
 		logger:          logger.WithContext(map[string]interface{}{"package": "store"}),
 	}, nil
 }
