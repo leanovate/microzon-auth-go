@@ -1,15 +1,15 @@
 package redis_backend
 
 import (
-	"github.com/garyburd/redigo/redis"
 	"github.com/leanovate/microzon-auth-go/certificates"
 	"github.com/leanovate/microzon-auth-go/config"
 	"github.com/leanovate/microzon-auth-go/logging"
+	"gopkg.in/redis.v3"
 )
 
 type redisStore struct {
 	selfCertificate *certificates.CertWithKey
-	redisPool       *redis.Pool
+	redisClient     *redis.Client
 	logger          logging.Logger
 }
 
@@ -23,7 +23,7 @@ func NewRedisStore(config *config.StoreConfig, parent logging.Logger) (*redisSto
 	}
 	redisStore := &redisStore{
 		selfCertificate: selfCert,
-		redisPool:       newRedisPool(config),
+		redisClient:     newRedisClient(config),
 		logger:          logger,
 	}
 
@@ -65,5 +65,5 @@ func (r *redisStore) CertificateBySKI(ski string) (*certificates.CertificateVO, 
 func (r *redisStore) Close() {
 	r.logger.Info("Closing store with redis backend...")
 	r.removeSelfCertificate()
-	r.redisPool.Close()
+	r.redisClient.Close()
 }

@@ -4,7 +4,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"github.com/garyburd/redigo/redis"
 	"github.com/go-errors/errors"
 	"time"
 )
@@ -17,15 +16,8 @@ func encodeCert(certificate *x509.Certificate) []byte {
 	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certificate.Raw})
 }
 
-func decodeCert(reply interface{}, err error) (*x509.Certificate, error) {
-	if reply == nil {
-		return nil, nil
-	}
-	encodedCert, err := redis.Bytes(reply, err)
-	if err != nil {
-		return nil, errors.Wrap(err, 0)
-	}
-	certBlock, _ := pem.Decode(encodedCert)
+func decodeCert(encoded string) (*x509.Certificate, error) {
+	certBlock, _ := pem.Decode([]byte(encoded))
 
 	if certBlock.Type != "CERTIFICATE" {
 		return nil, errors.Errorf("Invalid cert format")
@@ -35,63 +27,56 @@ func decodeCert(reply interface{}, err error) (*x509.Certificate, error) {
 }
 
 func (r *redisStore) storeSelfCertificate() error {
-	conn := r.redisPool.Get()
-	defer conn.Close()
-
 	key := certificateKey(r.selfCertificate.Ski)
 	value := encodeCert(r.selfCertificate.Certificate)
-	ttl := int64(r.selfCertificate.Certificate.NotAfter.Sub(time.Now()) / time.Second)
-	if _, err := conn.Do("SETEX", key, ttl, value); err != nil {
+	expiration := r.selfCertificate.Certificate.NotAfter.Sub(time.Now())
+
+	if err := r.redisClient.Set(key, value, expiration).Err(); err != nil {
 		return errors.Wrap(err, 0)
 	}
 	return nil
 }
 
 func (r *redisStore) removeSelfCertificate() error {
-	conn := r.redisPool.Get()
-	defer conn.Close()
-
 	key := certificateKey(r.selfCertificate.Ski)
-	if _, err := conn.Do("DEL", key); err != nil {
+	if err := r.redisClient.Del(key).Err(); err != nil {
 		return errors.Wrap(err, 0)
 	}
 	return nil
 }
 
 func (r *redisStore) scanCertificates() ([]*x509.Certificate, error) {
-	conn := r.redisPool.Get()
-	defer conn.Close()
-
 	result := make([]*x509.Certificate, 0)
 
-	nextChunk := 0
+	var cursor int64 = 0
 	first := true
-	for first || nextChunk != 0 {
+	for first || cursor != 0 {
 		first = false
-		scanResult, err := redis.Values(conn.Do("SCAN", nextChunk, "MATCH", certificateKey("*")))
+		nextCursor, keys, err := r.redisClient.Scan(cursor, certificateKey("*"), 0).Result()
 		if err != nil {
 			return nil, errors.Wrap(err, 0)
 		}
-		var keys []string
-		if _, err := redis.Scan(scanResult, &nextChunk, &keys); err != nil {
+		cursor = nextCursor
+		encodedCerts, err := r.redisClient.MGet(keys...).Result()
+		if err != nil {
 			return nil, errors.Wrap(err, 0)
 		}
-		for _, key := range keys {
-			cert, err := decodeCert(conn.Do("GET", key))
+		for _, encodedCert := range encodedCerts {
+			cert, err := decodeCert(encodedCert.(string))
 			if err != nil {
-				return nil, errors.Wrap(err, 0)
+				r.logger.Warn("Invalid cert in database")
 			}
-			if cert != nil {
-				result = append(result, cert)
-			}
+			result = append(result, cert)
 		}
 	}
 	return result, nil
 }
 
 func (r *redisStore) getCertificateBySki(ski string) (*x509.Certificate, error) {
-	conn := r.redisPool.Get()
-	defer conn.Close()
+	encodedCert, err := r.redisClient.Get(certificateKey(ski)).Result()
+	if err != nil {
+		return nil, errors.Wrap(err, 0)
 
-	return decodeCert(conn.Do("GET", certificateKey(ski)))
+	}
+	return decodeCert(encodedCert)
 }
