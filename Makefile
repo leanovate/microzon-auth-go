@@ -36,7 +36,7 @@ docker:
 	@mkdir -p bin/
 	@echo "--> Running go build (linux, amd64)"
 	@go build -ldflags "-X github.com/leanovate/microzon-auth-go/config.versionMinor=${VERSION}" -v -o bin/microzon-auth github.com/leanovate/microzon-auth-go
-	@docker build -t microzon-auth .
+	@docker-compose build microzon-auth
 
 vet: export GOPATH=${PWD}/Godeps/_workspace:${PWD}/../../../..
 vet:
