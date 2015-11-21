@@ -4,6 +4,7 @@ import (
 	"github.com/leanovate/microzon-auth-go/certificates"
 	"github.com/leanovate/microzon-auth-go/config"
 	"github.com/leanovate/microzon-auth-go/logging"
+	"github.com/leanovate/microzon-auth-go/revokations"
 	"gopkg.in/redis.v3"
 )
 
@@ -59,6 +60,14 @@ func (r *redisStore) CertificateBySKI(ski string) (*certificates.CertificateVO, 
 	if cert != nil {
 		return certificates.NewCertificateVO(cert), nil
 	}
+	return nil, nil
+}
+
+func (s *redisStore) AddRevokation(sha256 string, expiresAt int64) error {
+	return nil
+}
+
+func (s *redisStore) ListRevokations(sinceVersion uint64) (*revokations.RevokationListVO, error) {
 	return nil, nil
 }
 

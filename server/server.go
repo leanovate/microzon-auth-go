@@ -60,6 +60,7 @@ func (s *Server) routeHandler() http.Handler {
 		routing.PrefixSeq("/v1",
 			s.TokensResource(),
 			s.CertificatesRoutes(),
+			s.RevokationsRoutes(),
 			s.InternalRoutes(),
 		),
 	)

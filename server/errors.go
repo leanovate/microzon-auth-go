@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"github.com/go-errors/errors"
 )
 
 type HTTPError struct {
@@ -15,5 +14,9 @@ func (err *HTTPError) Error() string {
 }
 
 func NotFound() error {
-	return errors.Wrap(&HTTPError{Status: 404, Message: "Not Found"}, 1)
+	return &HTTPError{Status: 404, Message: "Not Found"}
+}
+
+func BadRequest() error {
+	return &HTTPError{Status: 400, Message: "Bad request"}
 }
