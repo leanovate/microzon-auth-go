@@ -6,6 +6,7 @@ import (
 	"github.com/leanovate/microzon-auth-go/tokens"
 	"github.com/untoldwind/routing"
 	"net/http"
+	"time"
 )
 
 type tokensResource struct {
@@ -31,5 +32,5 @@ func (r *tokensResource) CreateToken(req *http.Request) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	return tokens.NewToken(selfCert)
+	return tokens.NewTokenInfo("realm", "user", time.Now().Add(15*time.Minute), selfCert)
 }

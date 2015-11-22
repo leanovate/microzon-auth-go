@@ -20,7 +20,7 @@ func (s *Server) RevokationsRoutes() routing.Matcher {
 	return routing.PrefixSeq("/revokations",
 		routing.EndSeq(
 			routing.GETFunc(wrap(resource.logger, resource.QueryRevokations)),
-			routing.MethodNotAllowed,
+			SendError(s.logger, MethodNotAllowed()),
 		),
 	)
 }

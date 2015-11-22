@@ -24,7 +24,7 @@ func (s *Server) InternalRoutes() routing.Matcher {
 		routing.PrefixSeq("/status",
 			routing.EndSeq(
 				routing.GETFunc(wrap(resource.logger, resource.Status)),
-				routing.MethodNotAllowed,
+				SendError(s.logger, MethodNotAllowed()),
 			),
 		),
 	)

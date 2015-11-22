@@ -21,12 +21,13 @@ func (s *Server) CertificatesRoutes() routing.Matcher {
 	return routing.PrefixSeq("/certificates",
 		routing.EndSeq(
 			routing.GETFunc(wrap(resource.logger, resource.QueryCertificates)),
-			routing.MethodNotAllowed,
+			SendError(s.logger, MethodNotAllowed()),
 		),
 		routing.StringPart(
 			func(ski string) routing.Matcher {
 				return routing.EndSeq(
 					routing.GETFunc(wrap(resource.logger, resource.GetCertBySki(ski))),
+					SendError(s.logger, MethodNotAllowed()),
 				)
 			},
 		),
