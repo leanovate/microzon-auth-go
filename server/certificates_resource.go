@@ -24,9 +24,9 @@ func (s *Server) CertificatesRoutes() routing.Matcher {
 			SendError(s.logger, MethodNotAllowed()),
 		),
 		routing.StringPart(
-			func(ski string) routing.Matcher {
+			func(x5t string) routing.Matcher {
 				return routing.EndSeq(
-					routing.GETFunc(wrap(resource.logger, resource.GetCertBySki(ski))),
+					routing.GETFunc(wrap(resource.logger, resource.GetCertBySki(x5t))),
 					SendError(s.logger, MethodNotAllowed()),
 				)
 			},
@@ -38,9 +38,9 @@ func (r *certificatesResource) QueryCertificates(req *http.Request) (interface{}
 	return r.store.AllCertificates()
 }
 
-func (r *certificatesResource) GetCertBySki(ski string) func(req *http.Request) (interface{}, error) {
+func (r *certificatesResource) GetCertBySki(x5t string) func(req *http.Request) (interface{}, error) {
 	return func(req *http.Request) (interface{}, error) {
-		cert, err := r.store.CertificateBySKI(ski)
+		cert, err := r.store.CertificateByThumbprint(x5t)
 		if err != nil {
 			return nil, err
 		}

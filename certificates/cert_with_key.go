@@ -5,7 +5,6 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/base64"
 	"math"
 	"math/big"
 	"time"
@@ -13,7 +12,7 @@ import (
 
 type CertWithKey struct {
 	Name        string
-	Ski         string
+	Thumbprint  string
 	PrivateKey  *rsa.PrivateKey
 	Certificate *x509.Certificate
 }
@@ -24,10 +23,6 @@ func NewCertWithKey(name string) (*CertWithKey, error) {
 		return nil, err
 	}
 
-	keyID, err := calculateKeyIdentifier(&privateKey.PublicKey)
-	if err != nil {
-		return nil, err
-	}
 	serialNumber, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
 	if err != nil {
 		return nil, err
@@ -43,7 +38,6 @@ func NewCertWithKey(name string) (*CertWithKey, error) {
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().Add(24 * time.Hour),
 		KeyUsage:              x509.KeyUsageCRLSign | x509.KeyUsageCertSign,
-		SubjectKeyId:          keyID,
 		BasicConstraintsValid: true,
 	}
 	certRaw, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
@@ -57,7 +51,7 @@ func NewCertWithKey(name string) (*CertWithKey, error) {
 
 	return &CertWithKey{
 		Name:        name,
-		Ski:         base64.URLEncoding.EncodeToString(keyID),
+		Thumbprint:  calculateThumbprint(cert),
 		PrivateKey:  privateKey,
 		Certificate: cert,
 	}, nil

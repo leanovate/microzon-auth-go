@@ -13,13 +13,13 @@ type TokenInfoVO struct {
 	Realm     string `json:"realm"`
 	Subject   string `json:"sub"`
 	ExpiresAt int64  `json:"exp"`
-	Ski       string `json:"ski"`
+	X5T       string `json:"x5t"`
 	Sha256    string `json:"sha256"`
 }
 
 func NewTokenInfo(realm, subject string, expiresAt time.Time, signer *certificates.CertWithKey) (*TokenInfoVO, error) {
 	token := jwt.New(jwt.SigningMethodRS256)
-	token.Claims["ski"] = signer.Ski
+	token.Header["x5t"] = signer.Thumbprint
 	token.Claims["exp"] = expiresAt.Unix()
 	token.Claims["sub"] = subject
 	token.Claims["realm"] = realm
@@ -37,7 +37,7 @@ func NewTokenInfo(realm, subject string, expiresAt time.Time, signer *certificat
 		Realm:     realm,
 		Subject:   subject,
 		ExpiresAt: expiresAt.Unix(),
-		Ski:       signer.Ski,
+		X5T:       signer.Thumbprint,
 		Sha256:    base64.URLEncoding.EncodeToString(sha.Sum(nil)),
 	}, nil
 }

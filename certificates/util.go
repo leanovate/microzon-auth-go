@@ -3,8 +3,9 @@ package certificates
 import (
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha1"
-	"encoding/asn1"
+	"crypto/sha256"
+	"crypto/x509"
+	"encoding/base64"
 	"math/big"
 )
 
@@ -26,20 +27,8 @@ func generatePrivateKey() (*rsa.PrivateKey, error) {
 	return privateKey, nil
 }
 
-func calculateKeyIdentifier(pub interface{}) ([]byte, error) {
-	switch pub := pub.(type) {
-	case *rsa.PublicKey:
-		bytes, err := asn1.Marshal(rsaPublicKey{
-			N: pub.N,
-			E: pub.E,
-		})
-		if err != nil {
-			return nil, err
-		}
-		sha := sha1.New()
-		sha.Write(bytes)
-		return sha.Sum(nil), nil
-	default:
-		return nil, nil
-	}
+func calculateThumbprint(certificate *x509.Certificate) string {
+	sha := sha256.New()
+	sha.Write(certificate.Raw)
+	return base64.URLEncoding.EncodeToString(sha.Sum(nil))
 }

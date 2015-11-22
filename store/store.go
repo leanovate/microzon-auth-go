@@ -20,7 +20,7 @@ type Store interface {
 	AllCertificates() ([]*certificates.CertificateVO, error)
 
 	// Get a certificate by its SKI
-	CertificateBySKI(ski string) (*certificates.CertificateVO, error)
+	CertificateByThumbprint(x5t string) (*certificates.CertificateVO, error)
 
 	// Add a revokation
 	AddRevokation(sha256 string, expiresAt int64) error

@@ -26,7 +26,7 @@ func NewMemoryStore(parent logging.Logger) (*memoryStore, error) {
 	}
 	return &memoryStore{
 		selfCertificate:   selfCert,
-		certifcatesMap:    map[string]*x509.Certificate{selfCert.Ski: selfCert.Certificate},
+		certifcatesMap:    map[string]*x509.Certificate{selfCert.Thumbprint: selfCert.Certificate},
 		revokationVersion: 0,
 		logger:            logger,
 	}, nil
@@ -45,8 +45,8 @@ func (s *memoryStore) AllCertificates() ([]*certificates.CertificateVO, error) {
 	return result, nil
 }
 
-func (s *memoryStore) CertificateBySKI(ski string) (*certificates.CertificateVO, error) {
-	if certificate, ok := s.certifcatesMap[ski]; ok {
+func (s *memoryStore) CertificateByThumbprint(x5t string) (*certificates.CertificateVO, error) {
+	if certificate, ok := s.certifcatesMap[x5t]; ok {
 		return certificates.NewCertificateVO(certificate), nil
 	}
 	return nil, nil

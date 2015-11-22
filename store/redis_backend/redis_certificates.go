@@ -8,8 +8,8 @@ import (
 	"time"
 )
 
-func certificateKey(ski string) string {
-	return fmt.Sprintf("certificate:%s", ski)
+func certificateKey(x5t string) string {
+	return fmt.Sprintf("certificate:%s", x5t)
 }
 
 func encodeCert(certificate *x509.Certificate) []byte {
@@ -27,7 +27,7 @@ func decodeCert(encoded string) (*x509.Certificate, error) {
 }
 
 func (r *redisStore) storeSelfCertificate() error {
-	key := certificateKey(r.selfCertificate.Ski)
+	key := certificateKey(r.selfCertificate.Thumbprint)
 	value := encodeCert(r.selfCertificate.Certificate)
 	expiration := r.selfCertificate.Certificate.NotAfter.Sub(time.Now())
 
@@ -38,7 +38,7 @@ func (r *redisStore) storeSelfCertificate() error {
 }
 
 func (r *redisStore) removeSelfCertificate() error {
-	key := certificateKey(r.selfCertificate.Ski)
+	key := certificateKey(r.selfCertificate.Thumbprint)
 	if err := r.redisClient.Del(key).Err(); err != nil {
 		return errors.Wrap(err, 0)
 	}

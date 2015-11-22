@@ -52,8 +52,8 @@ func (r *redisStore) AllCertificates() ([]*certificates.CertificateVO, error) {
 	return result, nil
 }
 
-func (r *redisStore) CertificateBySKI(ski string) (*certificates.CertificateVO, error) {
-	cert, err := r.getCertificateBySki(ski)
+func (r *redisStore) CertificateByThumbprint(x5t string) (*certificates.CertificateVO, error) {
+	cert, err := r.getCertificateBySki(x5t)
 	if err != nil {
 		return nil, err
 	}
