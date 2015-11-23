@@ -1,4 +1,4 @@
-package revokations
+package revocations
 
 import (
 	"fmt"

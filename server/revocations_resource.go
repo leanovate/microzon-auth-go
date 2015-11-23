@@ -7,25 +7,25 @@ import (
 	"net/http"
 )
 
-type revokationssResource struct {
+type revocationssResource struct {
 	store  store.Store
 	logger logging.Logger
 }
 
-func (s *Server) RevokationsRoutes() routing.Matcher {
-	resource := &revokationssResource{
+func (s *Server) RevocationsRoutes() routing.Matcher {
+	resource := &revocationssResource{
 		store:  s.store,
-		logger: s.logger.WithContext(map[string]interface{}{"resource": "revokations"}),
+		logger: s.logger.WithContext(map[string]interface{}{"resource": "revocations"}),
 	}
-	return routing.PrefixSeq("/revokations",
+	return routing.PrefixSeq("/revocations",
 		routing.EndSeq(
-			routing.GETFunc(wrap(resource.logger, resource.QueryRevokations)),
+			routing.GETFunc(wrap(resource.logger, resource.QueryRevocations)),
 			SendError(s.logger, MethodNotAllowed()),
 		),
 	)
 }
 
-func (r *revokationssResource) QueryRevokations(req *http.Request) (interface{}, error) {
+func (r *revocationssResource) QueryRevocations(req *http.Request) (interface{}, error) {
 	sinceVersion, err := queryParamUint(req, "since_version", 0)
 	if err != nil {
 		return nil, BadRequest()

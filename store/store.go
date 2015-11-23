@@ -5,7 +5,7 @@ import (
 	"github.com/leanovate/microzon-auth-go/certificates"
 	"github.com/leanovate/microzon-auth-go/config"
 	"github.com/leanovate/microzon-auth-go/logging"
-	"github.com/leanovate/microzon-auth-go/revokations"
+	"github.com/leanovate/microzon-auth-go/revocations"
 	"github.com/leanovate/microzon-auth-go/store/memory_backend"
 	"github.com/leanovate/microzon-auth-go/store/redis_backend"
 	"strings"
@@ -27,7 +27,7 @@ type Store interface {
 	AddRevokation(sha256 string, expiresAt time.Time) error
 
 	// List all revokations since version
-	ListRevokations(sinceVersion uint64) (*revokations.RevokationListVO, error)
+	ListRevokations(sinceVersion uint64) (*revocations.RevokationListVO, error)
 
 	// Close the store
 	Close()

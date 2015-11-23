@@ -6,7 +6,7 @@ package store
 import (
 	gomock "github.com/golang/mock/gomock"
 	certificates "github.com/leanovate/microzon-auth-go/certificates"
-	revokations "github.com/leanovate/microzon-auth-go/revokations"
+	revokations "github.com/leanovate/microzon-auth-go/revocations"
 	time "time"
 )
 

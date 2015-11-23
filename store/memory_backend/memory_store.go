@@ -4,7 +4,7 @@ import (
 	"crypto/x509"
 	"github.com/leanovate/microzon-auth-go/certificates"
 	"github.com/leanovate/microzon-auth-go/logging"
-	"github.com/leanovate/microzon-auth-go/revokations"
+	"github.com/leanovate/microzon-auth-go/revocations"
 	"sync/atomic"
 	"time"
 )
@@ -13,7 +13,7 @@ type memoryStore struct {
 	selfCertificate   *certificates.CertWithKey
 	certifcatesMap    map[string]*x509.Certificate
 	revokationVersion uint64
-	revokations       map[uint64]*revokations.RevokationVO
+	revokations       map[uint64]*revocations.RevocationVO
 	logger            logging.Logger
 }
 
@@ -56,14 +56,14 @@ func (s *memoryStore) CertificateByThumbprint(x5t string) (*certificates.Certifi
 func (s *memoryStore) AddRevokation(sha256 string, expiresAt time.Time) error {
 	version := atomic.AddUint64(&s.revokationVersion, 1)
 
-	s.revokations[version] = revokations.NewRevokationVO(version, sha256, expiresAt)
+	s.revokations[version] = revocations.NewRevokationVO(version, sha256, expiresAt)
 
 	return nil
 }
 
-func (s *memoryStore) ListRevokations(sinceVersion uint64) (*revokations.RevokationListVO, error) {
+func (s *memoryStore) ListRevokations(sinceVersion uint64) (*revocations.RevokationListVO, error) {
 	version := atomic.LoadUint64(&s.revokationVersion)
-	result := make([]*revokations.RevokationVO, 0)
+	result := make([]*revocations.RevocationVO, 0)
 
 	for version, revokation := range s.revokations {
 		if version > 0 {
@@ -71,7 +71,7 @@ func (s *memoryStore) ListRevokations(sinceVersion uint64) (*revokations.Revokat
 		}
 	}
 
-	return revokations.NewRevokationListVO(version, result), nil
+	return revocations.NewRevokationListVO(version, result), nil
 }
 
 func (r *memoryStore) Close() {

@@ -1,4 +1,4 @@
-package revokations
+package revocations
 
 import (
 	"github.com/leanovate/microzon-auth-go/logging"
@@ -6,17 +6,25 @@ import (
 	"time"
 )
 
+// Manage a group of observers (to any kind of resource)
+// An observer is just a channel receiving an empty struct{} as notification
 type ObserverGroup struct {
 	logger    logging.Logger
 	lock      sync.Mutex
 	observers []chan struct{}
 }
 
+// Create a new observer group
+// Usually there should be only one per resource
 func NewObserverGroup(logger logging.Logger) *ObserverGroup {
 	return &ObserverGroup{
 		logger: logger.WithContext(map[string]interface{}{"package": "revokations"}),
 	}
 }
+
+// Notify all observers in the group
+// Each observer will be notified only once, after notification the observer will
+// be removed from the group
 func (g *ObserverGroup) Notify() {
 	g.logger.Debug("[ObserverGroup.Notify] waiting for lock ...")
 	g.lock.Lock()
@@ -33,6 +41,7 @@ func (g *ObserverGroup) Notify() {
 	g.logger.Debug("[ObserverGroup.Notify] notified all ...")
 }
 
+// Attach an observer to the group
 func (g *ObserverGroup) AttachObserver(observer chan struct{}) {
 	g.logger.Debug("[ObserverGroup.AttachObserver] waiting for lock ...")
 	g.lock.Lock()
@@ -42,6 +51,7 @@ func (g *ObserverGroup) AttachObserver(observer chan struct{}) {
 	g.observers = append(g.observers, observer)
 }
 
+// Detach an observer from the group
 func (g *ObserverGroup) DetachObserver(observer chan struct{}) bool {
 	g.logger.Debug("[ObserverGroup.DetachObserver] waiting for lock ...")
 	g.lock.Lock()
@@ -58,12 +68,16 @@ func (g *ObserverGroup) DetachObserver(observer chan struct{}) bool {
 	return false
 }
 
+// Convenient function to add an observer to the group
+// Result is a channel that will receive an empty struct{} on notification
 func (g *ObserverGroup) AddObserver() chan struct{} {
 	observer := make(chan struct{}, 1)
 	g.AttachObserver(observer)
 	return observer
 }
 
+// Convenient function to add an observer with timeout to the group
+// Result is a channel that is guaranteed to receive a notification within a given amount of time
 func (g *ObserverGroup) AddObserverWithTimeout(duration time.Duration) chan struct{} {
 	observer := make(chan struct{}, 1)
 	timer := time.NewTimer(duration)
