@@ -48,7 +48,7 @@ func (r *tokensResource) VerifyToken(req *http.Request) (interface{}, error) {
 		if time.Unix(token.Claims["exp"].(int64), 0).Before(time.Now()) {
 			return nil, errors.New("Token is expired")
 		}
-		if r, err := r.store.ListRevokations(0); err == nil {
+		if r, err := r.store.ListRevocations(0); err == nil {
 			for _, rev := range r.Revocations {
 				if rev.Sha256 == tokens.ToSha256(token.Raw) {
 					return nil, errors.New("Token has been revoked")

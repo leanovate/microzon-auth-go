@@ -23,11 +23,14 @@ type Store interface {
 	// Get a certificate by its SKI
 	CertificateByThumbprint(x5t string) (*certificates.CertificateVO, error)
 
-	// Add a revokation
-	AddRevokation(sha256 string, expiresAt time.Time) error
+	// Add a revocation
+	AddRevocation(sha256 string, expiresAt time.Time) error
 
-	// List all revokations since version
-	ListRevokations(sinceVersion uint64) (*revocations.RevokationListVO, error)
+	// List all revocations since version
+	ListRevocations(sinceVersion uint64) (*revocations.RevokationListVO, error)
+
+	// Check if a token is revoked
+	IsRevoked(sha256 string) (bool, error)
 
 	// Close the store
 	Close()

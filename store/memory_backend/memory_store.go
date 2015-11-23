@@ -12,8 +12,8 @@ import (
 type memoryStore struct {
 	selfCertificate   *certificates.CertWithKey
 	certifcatesMap    map[string]*x509.Certificate
-	revokationVersion uint64
-	revokations       map[uint64]*revocations.RevocationVO
+	revocationVersion uint64
+	revocations       *revocations.Revocations
 	logger            logging.Logger
 }
 
@@ -28,7 +28,8 @@ func NewMemoryStore(parent logging.Logger) (*memoryStore, error) {
 	return &memoryStore{
 		selfCertificate:   selfCert,
 		certifcatesMap:    map[string]*x509.Certificate{selfCert.Thumbprint: selfCert.Certificate},
-		revokationVersion: 0,
+		revocationVersion: 0,
+		revocations:       revocations.NewRevokations(parent),
 		logger:            logger,
 	}, nil
 }
@@ -53,25 +54,20 @@ func (s *memoryStore) CertificateByThumbprint(x5t string) (*certificates.Certifi
 	return nil, nil
 }
 
-func (s *memoryStore) AddRevokation(sha256 string, expiresAt time.Time) error {
-	version := atomic.AddUint64(&s.revokationVersion, 1)
+func (s *memoryStore) AddRevocation(sha256 string, expiresAt time.Time) error {
+	version := atomic.AddUint64(&s.revocationVersion, 1)
 
-	s.revokations[version] = revocations.NewRevokationVO(version, sha256, expiresAt)
+	s.revocations.AddRevokation(revocations.NewRevokationVO(version, sha256, expiresAt))
 
 	return nil
 }
 
-func (s *memoryStore) ListRevokations(sinceVersion uint64) (*revocations.RevokationListVO, error) {
-	version := atomic.LoadUint64(&s.revokationVersion)
-	result := make([]*revocations.RevocationVO, 0)
+func (s *memoryStore) ListRevocations(sinceVersion uint64) (*revocations.RevokationListVO, error) {
+	return s.revocations.GetRevocationsSinceVersion(sinceVersion), nil
+}
 
-	for version, revokation := range s.revokations {
-		if version > 0 {
-			result = append(result, revokation)
-		}
-	}
-
-	return revocations.NewRevokationListVO(version, result), nil
+func (s *memoryStore) IsRevoked(sha256 string) (bool, error) {
+	return s.revocations.ContainsHash(sha256), nil
 }
 
 func (r *memoryStore) Close() {

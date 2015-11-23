@@ -12,6 +12,7 @@ import (
 type redisStore struct {
 	selfCertificate *certificates.CertWithKey
 	redisClient     *redis.Client
+	revocations     *revocations.Revocations
 	logger          logging.Logger
 }
 
@@ -26,6 +27,7 @@ func NewRedisStore(config *config.StoreConfig, parent logging.Logger) (*redisSto
 	redisStore := &redisStore{
 		selfCertificate: selfCert,
 		redisClient:     newRedisClient(config),
+		revocations:     revocations.NewRevokations(parent),
 		logger:          logger,
 	}
 
@@ -64,12 +66,16 @@ func (r *redisStore) CertificateByThumbprint(x5t string) (*certificates.Certific
 	return nil, nil
 }
 
-func (s *redisStore) AddRevokation(sha256 string, expiresAt time.Time) error {
-	return nil
+func (s *redisStore) AddRevocation(sha256 string, expiresAt time.Time) error {
+	return s.insertRevocation(sha256, expiresAt)
 }
 
-func (s *redisStore) ListRevokations(sinceVersion uint64) (*revocations.RevokationListVO, error) {
-	return nil, nil
+func (s *redisStore) ListRevocations(sinceVersion uint64) (*revocations.RevokationListVO, error) {
+	return s.revocations.GetRevocationsSinceVersion(sinceVersion), nil
+}
+
+func (s *redisStore) IsRevoked(sha256 string) (bool, error) {
+	return s.revocations.ContainsHash(sha256), nil
 }
 
 func (r *redisStore) Close() {

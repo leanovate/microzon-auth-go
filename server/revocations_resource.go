@@ -30,5 +30,5 @@ func (r *revocationssResource) QueryRevocations(req *http.Request) (interface{},
 	if err != nil {
 		return nil, BadRequest()
 	}
-	return r.store.ListRevokations(sinceVersion)
+	return r.store.ListRevocations(sinceVersion)
 }
