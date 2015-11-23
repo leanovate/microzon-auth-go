@@ -6,6 +6,7 @@ import (
 	"github.com/leanovate/microzon-auth-go/logging"
 	"github.com/leanovate/microzon-auth-go/revokations"
 	"gopkg.in/redis.v3"
+	"time"
 )
 
 type redisStore struct {
@@ -63,7 +64,7 @@ func (r *redisStore) CertificateByThumbprint(x5t string) (*certificates.Certific
 	return nil, nil
 }
 
-func (s *redisStore) AddRevokation(sha256 string, expiresAt int64) error {
+func (s *redisStore) AddRevokation(sha256 string, expiresAt time.Time) error {
 	return nil
 }
 

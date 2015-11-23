@@ -6,6 +6,7 @@ import (
 	"github.com/leanovate/microzon-auth-go/logging"
 	"github.com/leanovate/microzon-auth-go/revokations"
 	"sync/atomic"
+	"time"
 )
 
 type memoryStore struct {
@@ -52,10 +53,10 @@ func (s *memoryStore) CertificateByThumbprint(x5t string) (*certificates.Certifi
 	return nil, nil
 }
 
-func (s *memoryStore) AddRevokation(sha256 string, expiresAt int64) error {
+func (s *memoryStore) AddRevokation(sha256 string, expiresAt time.Time) error {
 	version := atomic.AddUint64(&s.revokationVersion, 1)
 
-	s.revokations[version] = revokations.NewRevokationVO(sha256, expiresAt)
+	s.revokations[version] = revokations.NewRevokationVO(version, sha256, expiresAt)
 
 	return nil
 }

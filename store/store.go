@@ -9,6 +9,7 @@ import (
 	"github.com/leanovate/microzon-auth-go/store/memory_backend"
 	"github.com/leanovate/microzon-auth-go/store/redis_backend"
 	"strings"
+	"time"
 )
 
 // Storage backend
@@ -23,7 +24,7 @@ type Store interface {
 	CertificateByThumbprint(x5t string) (*certificates.CertificateVO, error)
 
 	// Add a revokation
-	AddRevokation(sha256 string, expiresAt int64) error
+	AddRevokation(sha256 string, expiresAt time.Time) error
 
 	// List all revokations since version
 	ListRevokations(sinceVersion uint64) (*revokations.RevokationListVO, error)
