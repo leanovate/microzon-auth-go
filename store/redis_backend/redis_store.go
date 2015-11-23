@@ -36,7 +36,7 @@ func NewRedisStore(config *config.StoreConfig, parent logging.Logger) (*redisSto
 	return redisStore, nil
 }
 
-func (r *redisStore) SelfCerificate() (*certificates.CertWithKey, error) {
+func (r *redisStore) SelfCertificate() (*certificates.CertWithKey, error) {
 	return r.selfCertificate, nil
 }
 

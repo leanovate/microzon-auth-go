@@ -32,7 +32,7 @@ func NewMemoryStore(parent logging.Logger) (*memoryStore, error) {
 	}, nil
 }
 
-func (s *memoryStore) SelfCerificate() (*certificates.CertWithKey, error) {
+func (s *memoryStore) SelfCertificate() (*certificates.CertWithKey, error) {
 	return s.selfCertificate, nil
 }
 
