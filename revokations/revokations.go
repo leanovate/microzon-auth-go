@@ -1,12 +1,14 @@
 package revokations
 
 import (
+	"github.com/leanovate/microzon-auth-go/logging"
 	"sync"
 	"time"
 )
 
 // Cache/manage revokations
 type Revokations struct {
+	Observe              *ObserverGroup
 	lock                 sync.RWMutex
 	revokationsByHash    map[string]*RevokationVO
 	RevokationsByVersion map[uint64]*RevokationVO
@@ -16,8 +18,9 @@ type Revokations struct {
 
 // Create a new revokations cache
 // Usually there should only be one
-func NewRevokations() *Revokations {
+func NewRevokations(logger logging.Logger) *Revokations {
 	return &Revokations{
+		Observe:              NewObserverGroup(logger),
 		revokationsByHash:    make(map[string]*RevokationVO, 0),
 		RevokationsByVersion: make(map[uint64]*RevokationVO, 0),
 		minVersion:           0,
@@ -29,6 +32,7 @@ func NewRevokations() *Revokations {
 func (r *Revokations) AddRevokation(revokation *RevokationVO) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
+	defer r.Observe.Notify()
 
 	r.revokationsByHash[revokation.Sha256] = revokation
 	r.RevokationsByVersion[revokation.Version] = revokation

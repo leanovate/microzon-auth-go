@@ -2,6 +2,7 @@ package revokations
 
 import (
 	"fmt"
+	"github.com/leanovate/microzon-auth-go/logging"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
@@ -9,7 +10,7 @@ import (
 
 func TestRevokations(t *testing.T) {
 	Convey("Given an empty revokations list", t, func() {
-		revokations := NewRevokations()
+		revokations := NewRevokations(logging.NewSimpleLoggerNull())
 
 		Convey("When revokation is added", func() {
 			revokation := NewRevokationVO(1, "abcd", time.Now().Add(10*time.Minute))
@@ -22,7 +23,7 @@ func TestRevokations(t *testing.T) {
 			So(revokations.maxVersion, ShouldEqual, 1)
 
 			Convey("When revokation list is queried", func() {
-revokationList :=				revokations.GetRevokationsSinceVersion(0)
+				revokationList := revokations.GetRevokationsSinceVersion(0)
 
 				So(revokationList.Version, ShouldEqual, 1)
 				So(len(revokationList.Revokations), ShouldEqual, 1)
@@ -40,7 +41,7 @@ revokationList :=				revokations.GetRevokationsSinceVersion(0)
 	})
 
 	Convey("Given revokations list with expired entries", t, func() {
-		revokations := NewRevokations()
+		revokations := NewRevokations(logging.NewSimpleLoggerNull())
 		past := time.Now().Add(-10 * time.Minute)
 		for i := 0; i < 100; i++ {
 			revokation := NewRevokationVO(uint64(i+1), fmt.Sprintf("abcd%d", i), past.Add(time.Duration(i)*time.Second))
@@ -54,7 +55,7 @@ revokationList :=				revokations.GetRevokationsSinceVersion(0)
 		So(revokations.minVersion, ShouldEqual, 0)
 
 		Convey("When revokation list is queried", func() {
-			revokationList :=				revokations.GetRevokationsSinceVersion(50)
+			revokationList := revokations.GetRevokationsSinceVersion(50)
 
 			So(revokationList.Version, ShouldEqual, 100)
 			So(len(revokationList.Revokations), ShouldEqual, 50)
