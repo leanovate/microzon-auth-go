@@ -45,26 +45,46 @@ func (r *tokensResource) CreateToken(req *http.Request) (interface{}, error) {
 
 func (r *tokensResource) VerifyToken(req *http.Request) (interface{}, error) {
 	handler := func(token *jwt.Token) (interface{}, error) {
-		if time.Unix(token.Claims["exp"].(int64), 0).Before(time.Now()) {
-			return nil, errors.New("Token is expired")
-		}
-		if r, err := r.store.ListRevocations(0); err == nil {
-			for _, rev := range r.Revocations {
-				if rev.Sha256 == tokens.ToSha256(token.Raw) {
-					return nil, errors.New("Token has been revoked")
-				}
-			}
-		}
-		if cert, err := r.store.CertificateByThumbprint(token.Header["x5t"].(string)); err != nil {
+		r.logger.Debugf("Token: %s", *token)
+		err := r.verifyRevokations(token)
+		if err != nil {
 			return nil, err
 		} else {
-			return cert.PublicKey, err
+			return r.verifyCertificate(token)
 		}
 	}
 	if token, err := jwt.ParseFromRequest(req, handler); err == nil {
 		return tokens.CopyFromToken(token)
 	} else {
-		return nil, err
+		r.logger.Error(err)
+		return nil, NotFound()
 	}
 
+}
+
+func (r *tokensResource) verifyCertificate(token *jwt.Token) (interface{}, error) {
+	x5t := token.Header["x5t"]
+	if x5t != nil {
+		if cert, err := r.store.CertificateByThumbprint(x5t.(string)); err != nil || cert == nil {
+			return nil, errors.New("Certificate not found")
+		} else {
+			return cert.PublicKey, nil
+		}
+	} else {
+		return nil, errors.New("No x5t field found in token")
+	}
+}
+
+func (r *tokensResource) verifyRevokations(token *jwt.Token) error {
+	//TODO: choose right version for revocation
+	if revs, err := r.store.ListRevocations(0); err == nil {
+		for _, rev := range revs.Revocations {
+			if rev.Sha256 == tokens.ToSha256(token.Raw) {
+				return errors.New("Token has been revoked")
+			}
+		}
+		return nil
+	} else {
+		return err
+	}
 }
