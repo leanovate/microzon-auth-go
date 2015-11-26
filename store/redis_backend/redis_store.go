@@ -5,13 +5,12 @@ import (
 	"github.com/leanovate/microzon-auth-go/config"
 	"github.com/leanovate/microzon-auth-go/logging"
 	"github.com/leanovate/microzon-auth-go/revocations"
-	"gopkg.in/redis.v3"
 	"time"
 )
 
 type redisStore struct {
 	selfCertificate *certificates.CertWithKey
-	redisClient     *redis.Client
+	connector       redisConnector
 	revocations     *revocations.Revocations
 	logger          logging.Logger
 }
@@ -26,7 +25,7 @@ func NewRedisStore(config *config.StoreConfig, parent logging.Logger) (*redisSto
 	}
 	redisStore := &redisStore{
 		selfCertificate: selfCert,
-		redisClient:     newRedisClient(config),
+		connector:       newRedisConnector(config),
 		revocations:     revocations.NewRevokations(parent),
 		logger:          logger,
 	}
@@ -85,5 +84,5 @@ func (s *redisStore) IsRevoked(sha256 string) (bool, error) {
 func (r *redisStore) Close() {
 	r.logger.Info("Closing store with redis backend...")
 	r.removeSelfCertificate()
-	r.redisClient.Close()
+	r.connector.close()
 }

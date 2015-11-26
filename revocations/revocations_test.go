@@ -1,11 +1,11 @@
 package revocations
 
 import (
+	"crypto/rand"
 	"github.com/leanovate/microzon-auth-go/logging"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
-	"crypto/rand"
 )
 
 func TestRevokations(t *testing.T) {
@@ -48,7 +48,7 @@ func TestRevokations(t *testing.T) {
 		for i := 0; i < 100; i++ {
 			var hash RawSha256
 			rand.Read(hash[:])
-			revocation := NewRevocation(uint64(i + 1), hash, past.Add(time.Duration(i)*time.Second))
+			revocation := NewRevocation(uint64(i+1), hash, past.Add(time.Duration(i)*time.Second))
 
 			revocations.AddRevokation(revocation)
 		}
@@ -79,7 +79,7 @@ func TestRevokations(t *testing.T) {
 			for i := 0; i < 50; i++ {
 				var hash RawSha256
 				rand.Read(hash[:])
-				revocation := NewRevocation(uint64(101 + i), hash, future.Add(time.Duration(i)*time.Second))
+				revocation := NewRevocation(uint64(101+i), hash, future.Add(time.Duration(i)*time.Second))
 
 				revocations.AddRevokation(revocation)
 			}

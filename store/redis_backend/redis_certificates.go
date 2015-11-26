@@ -31,7 +31,11 @@ func (r *redisStore) storeSelfCertificate() error {
 	value := encodeCert(r.selfCertificate.Certificate)
 	expiration := r.selfCertificate.Certificate.NotAfter.Sub(time.Now())
 
-	if err := r.redisClient.Set(key, value, expiration).Err(); err != nil {
+	client, err := r.connector.getClient(key)
+	if err != nil {
+		return errors.Wrap(err, 0)
+	}
+	if err := client.Set(key, value, expiration).Err(); err != nil {
 		return errors.Wrap(err, 0)
 	}
 	return nil
@@ -39,7 +43,11 @@ func (r *redisStore) storeSelfCertificate() error {
 
 func (r *redisStore) removeSelfCertificate() error {
 	key := certificateKey(r.selfCertificate.Thumbprint)
-	if err := r.redisClient.Del(key).Err(); err != nil {
+	client, err := r.connector.getClient(key)
+	if err != nil {
+		return errors.Wrap(err, 0)
+	}
+	if err := client.Del(key).Err(); err != nil {
 		return errors.Wrap(err, 0)
 	}
 	return nil
@@ -48,16 +56,20 @@ func (r *redisStore) removeSelfCertificate() error {
 func (r *redisStore) scanCertificates() ([]*x509.Certificate, error) {
 	result := make([]*x509.Certificate, 0)
 
+	client, err := r.connector.getClient("")
+	if err != nil {
+		return nil, errors.Wrap(err, 0)
+	}
 	var cursor int64 = 0
 	first := true
 	for first || cursor != 0 {
 		first = false
-		nextCursor, keys, err := r.redisClient.Scan(cursor, certificateKey("*"), 0).Result()
+		nextCursor, keys, err := client.Scan(cursor, certificateKey("*"), 0).Result()
 		if err != nil {
 			return nil, errors.Wrap(err, 0)
 		}
 		cursor = nextCursor
-		encodedCerts, err := r.redisClient.MGet(keys...).Result()
+		encodedCerts, err := client.MGet(keys...).Result()
 		if err != nil {
 			return nil, errors.Wrap(err, 0)
 		}
@@ -73,7 +85,12 @@ func (r *redisStore) scanCertificates() ([]*x509.Certificate, error) {
 }
 
 func (r *redisStore) getCertificateBySki(ski string) (*x509.Certificate, error) {
-	encodedCert, err := r.redisClient.Get(certificateKey(ski)).Result()
+	key := certificateKey(ski)
+	client, err := r.connector.getClient(key)
+	if err != nil {
+		return nil, errors.Wrap(err, 0)
+	}
+	encodedCert, err := client.Get(key).Result()
 	if err != nil {
 		return nil, errors.Wrap(err, 0)
 
