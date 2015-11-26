@@ -30,6 +30,7 @@ func (s *Server) TokensResource() routing.Matcher {
 		routing.PrefixSeq("/myself",
 			routing.EndSeq(
 				routing.GETFunc(wrap(resource.logger, resource.VerifyToken)),
+				routing.DELETEFunc(wrap(resource.logger, resource.RevokeToken)),
 				routing.MethodNotAllowed,
 			),
 		),
@@ -45,22 +46,32 @@ func (r *tokensResource) CreateToken(req *http.Request) (interface{}, error) {
 }
 
 func (r *tokensResource) VerifyToken(req *http.Request) (interface{}, error) {
-	handler := func(token *jwt.Token) (interface{}, error) {
-		r.logger.Debugf("Token: %s", *token)
-		err := r.verifyRevocations(token)
-		if err != nil {
-			return nil, err
-		} else {
-			return r.verifyCertificate(token)
-		}
-	}
-	if token, err := jwt.ParseFromRequest(req, handler); err == nil {
+	if token, err := jwt.ParseFromRequest(req, r.tokenHandler); err == nil {
 		return tokens.CopyFromToken(token)
 	} else {
 		r.logger.Error(err)
 		return nil, Unauthorized()
 	}
+}
 
+func (r *tokensResource) RevokeToken(req *http.Request) (interface{}, error) {
+	if token, err := jwt.ParseFromRequest(req, r.tokenHandler); err == nil {
+		sha256 := revocations.RawSha256FromData(token.Raw)
+		expiresAt := time.Unix((int64)(token.Claims["exp"].(float64)), 0)
+		return nil, r.store.AddRevocation(sha256, expiresAt)
+	} else {
+		return nil, Unauthorized()
+	}
+}
+
+func (r *tokensResource) tokenHandler(token *jwt.Token) (interface{}, error) {
+	r.logger.Debugf("Token: %s", *token)
+	err := r.verifyRevocations(token)
+	if err != nil {
+		return nil, err
+	} else {
+		return r.verifyCertificate(token)
+	}
 }
 
 func (r *tokensResource) verifyCertificate(token *jwt.Token) (interface{}, error) {
