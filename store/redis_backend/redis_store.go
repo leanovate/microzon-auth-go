@@ -1,6 +1,7 @@
 package redis_backend
 
 import (
+	"crypto/x509"
 	"github.com/leanovate/microzon-auth-go/certificates"
 	"github.com/leanovate/microzon-auth-go/config"
 	"github.com/leanovate/microzon-auth-go/logging"
@@ -54,18 +55,11 @@ func (r *redisStore) AllCertificates() ([]*certificates.CertificateVO, error) {
 	return result, nil
 }
 
-func (r *redisStore) CertificateByThumbprint(x5t string) (*certificates.CertificateVO, error) {
-	cert, err := r.getCertificateBySki(x5t)
-	if err != nil {
-		return nil, err
-	}
-	if cert != nil {
-		return certificates.NewCertificateVO(cert), nil
-	}
-	return nil, nil
+func (r *redisStore) CertificateByThumbprint(x5t string) (*x509.Certificate, error) {
+	return r.getCertificateByX5t(x5t)
 }
 
-func (s *redisStore) AddRevocation(sha256 string, expiresAt time.Time) error {
+func (s *redisStore) AddRevocation(sha256 revocations.RawSha256, expiresAt time.Time) error {
 	return s.insertRevocation(sha256, expiresAt)
 }
 
@@ -73,12 +67,8 @@ func (s *redisStore) ListRevocations(sinceVersion uint64) (*revocations.Revokati
 	return s.revocations.GetRevocationsSinceVersion(sinceVersion), nil
 }
 
-func (s *redisStore) IsRevoked(sha256 string) (bool, error) {
-	rawSha256, err := revocations.NewRawSha256(sha256)
-	if err != nil {
-		return false, err
-	}
-	return s.revocations.ContainsHash(rawSha256), nil
+func (s *redisStore) IsRevoked(sha256 revocations.RawSha256) (bool, error) {
+	return s.revocations.ContainsHash(sha256), nil
 }
 
 func (r *redisStore) Close() {

@@ -1,6 +1,7 @@
 package store
 
 import (
+	"crypto/x509"
 	"github.com/go-errors/errors"
 	"github.com/leanovate/microzon-auth-go/certificates"
 	"github.com/leanovate/microzon-auth-go/config"
@@ -21,16 +22,16 @@ type Store interface {
 	AllCertificates() ([]*certificates.CertificateVO, error)
 
 	// Get a certificate by its SKI
-	CertificateByThumbprint(x5t string) (*certificates.CertificateVO, error)
+	CertificateByThumbprint(x5t string) (*x509.Certificate, error)
 
 	// Add a revocation
-	AddRevocation(sha256 string, expiresAt time.Time) error
+	AddRevocation(sha256 revocations.RawSha256, expiresAt time.Time) error
 
 	// List all revocations since version
 	ListRevocations(sinceVersion uint64) (*revocations.RevokationListVO, error)
 
 	// Check if a token is revoked
-	IsRevoked(sha256 string) (bool, error)
+	IsRevoked(sha256 revocations.RawSha256) (bool, error)
 
 	// Close the store
 	Close()

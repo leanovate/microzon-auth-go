@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 
+	"github.com/leanovate/microzon-auth-go/certificates"
 	"github.com/leanovate/microzon-auth-go/logging"
 	"github.com/leanovate/microzon-auth-go/store"
 	"github.com/untoldwind/routing"
@@ -47,6 +48,6 @@ func (r *certificatesResource) GetCertBySki(x5t string) func(req *http.Request) 
 		if cert == nil {
 			return nil, NotFound()
 		}
-		return cert, nil
+		return certificates.NewCertificateVO(cert), nil
 	}
 }

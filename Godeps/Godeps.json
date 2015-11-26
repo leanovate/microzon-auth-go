@@ -9,8 +9,8 @@
 		},
 		{
 			"ImportPath": "github.com/codegangsta/cli",
-			"Comment": "1.2.0-143-ga65b733",
-			"Rev": "a65b733b303f0055f8d324d805f393cd3e7a7904"
+			"Comment": "1.2.0-179-g0302d39",
+			"Rev": "0302d3914d2a6ad61404584cdae6e6dbc9c03599"
 		},
 		{
 			"ImportPath": "github.com/dgrijalva/jwt-go",
@@ -31,13 +31,13 @@
 		},
 		{
 			"ImportPath": "github.com/smartystreets/assertions",
-			"Comment": "1.5.0-384-gc702abf",
-			"Rev": "c702abfa8e05e48f79068ed1cf1aac7cf43f5eef"
+			"Comment": "1.5.0-405-g01fedaa",
+			"Rev": "01fedaa993c0a9f9aa55111501cd7c81a49e812e"
 		},
 		{
 			"ImportPath": "github.com/smartystreets/goconvey/convey",
-			"Comment": "1.5.0-392-g68c2220",
-			"Rev": "68c22200a00354e2a63e1a0ade46eadd20e00333"
+			"Comment": "1.5.0-449-g530dd3d",
+			"Rev": "530dd3d2cafa09958178e8c557bc4abeea1651a5"
 		},
 		{
 			"ImportPath": "github.com/untoldwind/routing",

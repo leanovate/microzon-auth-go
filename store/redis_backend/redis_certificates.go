@@ -5,6 +5,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"github.com/go-errors/errors"
+	"gopkg.in/redis.v3"
 	"time"
 )
 
@@ -84,13 +85,16 @@ func (r *redisStore) scanCertificates() ([]*x509.Certificate, error) {
 	return result, nil
 }
 
-func (r *redisStore) getCertificateBySki(ski string) (*x509.Certificate, error) {
+func (r *redisStore) getCertificateByX5t(ski string) (*x509.Certificate, error) {
 	key := certificateKey(ski)
 	client, err := r.connector.getClient(key)
 	if err != nil {
 		return nil, errors.Wrap(err, 0)
 	}
 	encodedCert, err := client.Get(key).Result()
+	if err == redis.Nil {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, errors.Wrap(err, 0)
 

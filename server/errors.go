@@ -29,6 +29,10 @@ func BadRequest() *HTTPError {
 	return &HTTPError{Code: 400, Message: "Bad request"}
 }
 
+func Unauthorized() *HTTPError {
+	return &HTTPError{Code: 401, Message: "Unauthorized"}
+}
+
 func SendError(logger logging.Logger, err *HTTPError) routing.Matcher {
 	return func(remainingPath string, resp http.ResponseWriter, req *http.Request) bool {
 		encodeError(logger, resp, req, err)

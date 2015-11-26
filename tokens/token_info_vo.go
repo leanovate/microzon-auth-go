@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/go-errors/errors"
 	"github.com/leanovate/microzon-auth-go/certificates"
 	"time"
 )
@@ -27,7 +28,7 @@ func NewTokenInfo(realm, subject string, expiresAt time.Time, signer *certificat
 	raw, err := token.SignedString(signer.PrivateKey)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, 0)
 	}
 
 	return &TokenInfoVO{
@@ -45,7 +46,7 @@ func CopyFromToken(token *jwt.Token) (interface{}, error) {
 		Raw:       token.Raw,
 		Realm:     token.Claims["realm"].(string),
 		Subject:   token.Claims["sub"].(string),
-		ExpiresAt: token.Claims["exp"].(int64),
+		ExpiresAt: (int64)(token.Claims["exp"].(float64)),
 		X5T:       token.Header["x5t"].(string),
 		Sha256:    ToSha256(token.Raw),
 	}, nil

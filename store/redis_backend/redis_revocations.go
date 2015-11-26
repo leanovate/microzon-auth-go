@@ -3,6 +3,7 @@ package redis_backend
 import (
 	"fmt"
 	"github.com/go-errors/errors"
+	"github.com/leanovate/microzon-auth-go/revocations"
 	"strconv"
 	"time"
 )
@@ -16,7 +17,7 @@ return version
 
 const keyRevocationVersionCounter = "revocations:version"
 
-func (r *redisStore) insertRevocation(sha256 string, expiresAt time.Time) error {
+func (r *redisStore) insertRevocation(sha256 revocations.RawSha256, expiresAt time.Time) error {
 	client, err := r.connector.getClient(keyRevocationVersionCounter)
 	if err != nil {
 		return errors.Wrap(err, 0)
@@ -24,7 +25,7 @@ func (r *redisStore) insertRevocation(sha256 string, expiresAt time.Time) error 
 	expiresAtUnix := expiresAt.Unix()
 	expiration := int64(expiresAt.Sub(time.Now()) / time.Second)
 	result, err := client.Eval(insertRevocationScript, []string{keyRevocationVersionCounter},
-		[]string{sha256, strconv.FormatInt(expiresAtUnix, 10), strconv.FormatInt(expiration, 10)}).Result()
+		[]string{sha256.String(), strconv.FormatInt(expiresAtUnix, 10), strconv.FormatInt(expiration, 10)}).Result()
 
 	if err != nil {
 		return err

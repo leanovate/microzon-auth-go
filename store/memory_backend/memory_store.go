@@ -47,21 +47,17 @@ func (s *memoryStore) AllCertificates() ([]*certificates.CertificateVO, error) {
 	return result, nil
 }
 
-func (s *memoryStore) CertificateByThumbprint(x5t string) (*certificates.CertificateVO, error) {
+func (s *memoryStore) CertificateByThumbprint(x5t string) (*x509.Certificate, error) {
 	if certificate, ok := s.certifcatesMap[x5t]; ok {
-		return certificates.NewCertificateVO(certificate), nil
+		return certificate, nil
 	}
 	return nil, nil
 }
 
-func (s *memoryStore) AddRevocation(sha256 string, expiresAt time.Time) error {
+func (s *memoryStore) AddRevocation(sha256 revocations.RawSha256, expiresAt time.Time) error {
 	version := atomic.AddUint64(&s.revocationVersion, 1)
 
-	rawSha256, err := revocations.NewRawSha256(sha256)
-	if err != nil {
-		return err
-	}
-	s.revocations.AddRevokation(revocations.NewRevocation(version, rawSha256, expiresAt))
+	s.revocations.AddRevokation(revocations.NewRevocation(version, sha256, expiresAt))
 
 	return nil
 }
@@ -70,12 +66,8 @@ func (s *memoryStore) ListRevocations(sinceVersion uint64) (*revocations.Revokat
 	return s.revocations.GetRevocationsSinceVersion(sinceVersion), nil
 }
 
-func (s *memoryStore) IsRevoked(sha256 string) (bool, error) {
-	rawSha256, err := revocations.NewRawSha256(sha256)
-	if err != nil {
-		return false, err
-	}
-	return s.revocations.ContainsHash(rawSha256), nil
+func (s *memoryStore) IsRevoked(sha256 revocations.RawSha256) (bool, error) {
+	return s.revocations.ContainsHash(sha256), nil
 }
 
 func (r *memoryStore) Close() {

@@ -1,9 +1,10 @@
 package server
 
 import (
-	"errors"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/go-errors/errors"
 	"github.com/leanovate/microzon-auth-go/logging"
+	"github.com/leanovate/microzon-auth-go/revocations"
 	"github.com/leanovate/microzon-auth-go/store"
 	"github.com/leanovate/microzon-auth-go/tokens"
 	"github.com/untoldwind/routing"
@@ -46,7 +47,7 @@ func (r *tokensResource) CreateToken(req *http.Request) (interface{}, error) {
 func (r *tokensResource) VerifyToken(req *http.Request) (interface{}, error) {
 	handler := func(token *jwt.Token) (interface{}, error) {
 		r.logger.Debugf("Token: %s", *token)
-		err := r.verifyRevokations(token)
+		err := r.verifyRevocations(token)
 		if err != nil {
 			return nil, err
 		} else {
@@ -57,7 +58,7 @@ func (r *tokensResource) VerifyToken(req *http.Request) (interface{}, error) {
 		return tokens.CopyFromToken(token)
 	} else {
 		r.logger.Error(err)
-		return nil, NotFound()
+		return nil, Unauthorized()
 	}
 
 }
@@ -75,16 +76,13 @@ func (r *tokensResource) verifyCertificate(token *jwt.Token) (interface{}, error
 	}
 }
 
-func (r *tokensResource) verifyRevokations(token *jwt.Token) error {
-	//TODO: choose right version for revocation
-	if revs, err := r.store.ListRevocations(0); err == nil {
-		for _, rev := range revs.Revocations {
-			if rev.Sha256 == tokens.ToSha256(token.Raw) {
-				return errors.New("Token has been revoked")
-			}
-		}
-		return nil
-	} else {
+func (r *tokensResource) verifyRevocations(token *jwt.Token) error {
+	revoked, err := r.store.IsRevoked(revocations.RawSha256FromData(token.Raw))
+	if err != nil {
 		return err
 	}
+	if revoked {
+		return errors.New("Token has been revoked")
+	}
+	return nil
 }
