@@ -8,8 +8,7 @@ import (
 
 const insertRevocationScript = `
 local version = redis.call("INCR", KEYS[1])
-redis.call("HMSET", "revocations:version:" .. version, "sha256", ARGV[1], "expiresAt", ARGV[2], "version", version)
-redis.call("EXPIRE", "revocations:version:" .. version, ARGV[3])
+redis.call("SETEX", "revocations:version:" .. version, ARGV[3],  ARGV[1] .. ";" .. ARGV[2] .. ";" .. version)
 redis.call("PUBLISH", "revocations", version)
 return version
 `

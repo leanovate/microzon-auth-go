@@ -10,10 +10,11 @@ import (
 type Revocations struct {
 	Observe              *ObserverGroup
 	lock                 sync.RWMutex
-	revocationsByHash    map[string]*RevocationVO
-	revocationsByVersion map[uint64]*RevocationVO
+	revocationsByHash    map[RawSha256]*Revocation
+	revocationsByVersion map[uint64]*Revocation
 	minVersion           uint64
 	maxVersion           uint64
+	minExpiresAt         time.Time
 }
 
 // Create a new revocations cache
@@ -21,32 +22,36 @@ type Revocations struct {
 func NewRevokations(logger logging.Logger) *Revocations {
 	return &Revocations{
 		Observe:              NewObserverGroup(logger),
-		revocationsByHash:    make(map[string]*RevocationVO, 0),
-		revocationsByVersion: make(map[uint64]*RevocationVO, 0),
+		revocationsByHash:    make(map[RawSha256]*Revocation, 0),
+		revocationsByVersion: make(map[uint64]*Revocation, 0),
 		minVersion:           0,
 		maxVersion:           0,
+		minExpiresAt:         time.Now().Add(24 * time.Hour),
 	}
 }
 
 // Add a revocation
-func (r *Revocations) AddRevokation(revokation *RevocationVO) {
+func (r *Revocations) AddRevokation(revocation *Revocation) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	defer r.Observe.Notify()
 
-	r.revocationsByHash[revokation.Sha256] = revokation
-	r.revocationsByVersion[revokation.Version] = revokation
-	if revokation.Version < r.minVersion {
-		r.minVersion = revokation.Version
+	r.revocationsByHash[revocation.Sha256] = revocation
+	r.revocationsByVersion[revocation.Version] = revocation
+	if revocation.Version < r.minVersion {
+		r.minVersion = revocation.Version
 	}
-	if revokation.Version > r.maxVersion {
-		r.maxVersion = revokation.Version
+	if revocation.Version > r.maxVersion {
+		r.maxVersion = revocation.Version
+	}
+	if revocation.ExpiresAt.Before(r.minExpiresAt) {
+		r.minExpiresAt = revocation.ExpiresAt
 	}
 }
 
 // Check if a token hash is contained in the revocations
 // I.e. check if the token has been revoked
-func (r *Revocations) ContainsHash(sha256 string) bool {
+func (r *Revocations) ContainsHash(sha256 RawSha256) bool {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
@@ -70,7 +75,7 @@ func (r *Revocations) GetRevocationsSinceVersion(version uint64) *RevokationList
 	// At this point we assume that there are little to no gaps
 	for version = min; version <= r.maxVersion; version++ {
 		if revokation, ok := r.revocationsByVersion[version]; ok {
-			result = append(result, revokation)
+			result = append(result, NewRevokationVO(revokation))
 		}
 	}
 	return NewRevokationListVO(r.maxVersion, result)
@@ -78,7 +83,7 @@ func (r *Revocations) GetRevocationsSinceVersion(version uint64) *RevokationList
 
 // Cleanup expired revocations
 func (r *Revocations) cleanup() {
-	expiredRevocations, newMinVersion := r.findExpired()
+	expiredRevocations, newMinVersion, newMinExpiresAt := r.findExpired()
 
 	if len(expiredRevocations) == 0 {
 		return
@@ -91,22 +96,29 @@ func (r *Revocations) cleanup() {
 		delete(r.revocationsByVersion, revocation.Version)
 	}
 	r.minVersion = newMinVersion
+	r.minExpiresAt = newMinExpiresAt
 }
 
 // Find find expired revocations
-func (r *Revocations) findExpired() ([]*RevocationVO, uint64) {
+func (r *Revocations) findExpired() ([]*Revocation, uint64, time.Time) {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
-	result := make([]*RevocationVO, 0)
+	result := make([]*Revocation, 0)
 	newMinVersion := r.maxVersion
-	now := time.Now().Unix()
+	now := time.Now()
+	newMinExpiresAt := now.Add(24 * time.Hour)
 	for _, revocation := range r.revocationsByHash {
-		if revocation.ExpiresAt < now {
+		if revocation.ExpiresAt.Before(now) {
 			result = append(result, revocation)
-		} else if revocation.Version < newMinVersion {
-			newMinVersion = revocation.Version
+		} else {
+			if revocation.Version < newMinVersion {
+				newMinVersion = revocation.Version
+			}
+			if revocation.ExpiresAt.Before(newMinExpiresAt) {
+				newMinExpiresAt = revocation.ExpiresAt
+			}
 		}
 	}
-	return result, newMinVersion
+	return result, newMinVersion, newMinExpiresAt
 }

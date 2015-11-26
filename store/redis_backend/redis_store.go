@@ -75,7 +75,11 @@ func (s *redisStore) ListRevocations(sinceVersion uint64) (*revocations.Revokati
 }
 
 func (s *redisStore) IsRevoked(sha256 string) (bool, error) {
-	return s.revocations.ContainsHash(sha256), nil
+	rawSha256, err := revocations.NewRawSha256(sha256)
+	if err != nil {
+		return false, err
+	}
+	return s.revocations.ContainsHash(rawSha256), nil
 }
 
 func (r *redisStore) Close() {

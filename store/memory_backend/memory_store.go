@@ -57,7 +57,11 @@ func (s *memoryStore) CertificateByThumbprint(x5t string) (*certificates.Certifi
 func (s *memoryStore) AddRevocation(sha256 string, expiresAt time.Time) error {
 	version := atomic.AddUint64(&s.revocationVersion, 1)
 
-	s.revocations.AddRevokation(revocations.NewRevokationVO(version, sha256, expiresAt))
+	rawSha256, err := revocations.NewRawSha256(sha256)
+	if err != nil {
+		return err
+	}
+	s.revocations.AddRevokation(revocations.NewRevocation(version, rawSha256, expiresAt))
 
 	return nil
 }
@@ -67,7 +71,11 @@ func (s *memoryStore) ListRevocations(sinceVersion uint64) (*revocations.Revokat
 }
 
 func (s *memoryStore) IsRevoked(sha256 string) (bool, error) {
-	return s.revocations.ContainsHash(sha256), nil
+	rawSha256, err := revocations.NewRawSha256(sha256)
+	if err != nil {
+		return false, err
+	}
+	return s.revocations.ContainsHash(rawSha256), nil
 }
 
 func (r *memoryStore) Close() {
