@@ -36,7 +36,15 @@ func (s *Server) CertificatesRoutes() routing.Matcher {
 }
 
 func (r *certificatesResource) QueryCertificates(req *http.Request) (interface{}, error) {
-	return r.store.AllCertificates()
+	certs, err := r.store.AllCertificates()
+	if err != nil {
+		return nil, err
+	}
+	result := make([]*certificates.CertificateVO, 0, len(certs))
+	for _, cert := range certs {
+		result = append(result, certificates.NewCertificateVO(cert))
+	}
+	return result, nil
 }
 
 func (r *certificatesResource) GetCertBySki(x5t string) func(req *http.Request) (interface{}, error) {

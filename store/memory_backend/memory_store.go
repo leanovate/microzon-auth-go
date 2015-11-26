@@ -38,11 +38,11 @@ func (s *memoryStore) SelfCertificate() (*certificates.CertWithKey, error) {
 	return s.selfCertificate, nil
 }
 
-func (s *memoryStore) AllCertificates() ([]*certificates.CertificateVO, error) {
-	result := make([]*certificates.CertificateVO, 0, len(s.certifcatesMap))
+func (s *memoryStore) AllCertificates() ([]*x509.Certificate, error) {
+	result := make([]*x509.Certificate, 0, len(s.certifcatesMap))
 
 	for _, certificate := range s.certifcatesMap {
-		result = append(result, certificates.NewCertificateVO(certificate))
+		result = append(result, certificate)
 	}
 	return result, nil
 }

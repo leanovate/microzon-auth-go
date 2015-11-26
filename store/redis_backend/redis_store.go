@@ -43,16 +43,8 @@ func (r *redisStore) SelfCertificate() (*certificates.CertWithKey, error) {
 	return r.selfCertificate, nil
 }
 
-func (r *redisStore) AllCertificates() ([]*certificates.CertificateVO, error) {
-	certs, err := r.scanCertificates()
-	if err != nil {
-		return nil, err
-	}
-	result := make([]*certificates.CertificateVO, 0, len(certs))
-	for _, cert := range certs {
-		result = append(result, certificates.NewCertificateVO(cert))
-	}
-	return result, nil
+func (r *redisStore) AllCertificates() ([]*x509.Certificate, error) {
+	return r.scanCertificates()
 }
 
 func (r *redisStore) CertificateByThumbprint(x5t string) (*x509.Certificate, error) {

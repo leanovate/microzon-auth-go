@@ -19,7 +19,7 @@ type Store interface {
 	SelfCertificate() (*certificates.CertWithKey, error)
 
 	// Get all certificates
-	AllCertificates() ([]*certificates.CertificateVO, error)
+	AllCertificates() ([]*x509.Certificate, error)
 
 	// Get a certificate by its SKI
 	CertificateByThumbprint(x5t string) (*x509.Certificate, error)
