@@ -17,11 +17,11 @@ func TestRevokations(t *testing.T) {
 			rand.Read(hash[:])
 			revocation := NewRevocation(1, hash, time.Now().Add(10*time.Minute))
 
-			revocations.AddRevokation(revocation)
+			revocations.AddRevocation(revocation)
 
 			So(revocations.ContainsHash(hash), ShouldBeTrue)
-			So(revocations.revocationsByVersion[1], ShouldNotBeNil)
-			So(revocations.minVersion, ShouldEqual, 0)
+			_, ok := revocations.revocationsByVersion.Get(uint64(1))
+			So(ok, ShouldBeTrue)
 			So(revocations.maxVersion, ShouldEqual, 1)
 
 			Convey("When revokation list is queried", func() {
@@ -35,8 +35,8 @@ func TestRevokations(t *testing.T) {
 				revocations.cleanup()
 
 				So(revocations.ContainsHash(hash), ShouldBeTrue)
-				So(revocations.revocationsByVersion[1], ShouldNotBeNil)
-				So(revocations.minVersion, ShouldEqual, 0)
+				_, ok := revocations.revocationsByVersion.Get(uint64(1))
+				So(ok, ShouldBeTrue)
 				So(revocations.maxVersion, ShouldEqual, 1)
 			})
 		})
@@ -50,13 +50,12 @@ func TestRevokations(t *testing.T) {
 			rand.Read(hash[:])
 			revocation := NewRevocation(uint64(i+1), hash, past.Add(time.Duration(i)*time.Second))
 
-			revocations.AddRevokation(revocation)
+			revocations.AddRevocation(revocation)
 		}
 
 		So(len(revocations.revocationsByHash), ShouldEqual, 100)
-		So(len(revocations.revocationsByVersion), ShouldEqual, 100)
+		So(revocations.revocationsByVersion.Len(), ShouldEqual, 100)
 		So(revocations.maxVersion, ShouldEqual, 100)
-		So(revocations.minVersion, ShouldEqual, 0)
 
 		Convey("When revokation list is queried", func() {
 			revocationList := revocations.GetRevocationsSinceVersion(50)
@@ -69,9 +68,8 @@ func TestRevokations(t *testing.T) {
 			revocations.cleanup()
 
 			So(len(revocations.revocationsByHash), ShouldEqual, 0)
-			So(len(revocations.revocationsByVersion), ShouldEqual, 0)
+			So(revocations.revocationsByVersion.Len(), ShouldEqual, 0)
 			So(revocations.maxVersion, ShouldEqual, 100)
-			So(revocations.minVersion, ShouldEqual, 100)
 		})
 
 		Convey("When some non-expired revokations are added", func() {
@@ -81,21 +79,19 @@ func TestRevokations(t *testing.T) {
 				rand.Read(hash[:])
 				revocation := NewRevocation(uint64(101+i), hash, future.Add(time.Duration(i)*time.Second))
 
-				revocations.AddRevokation(revocation)
+				revocations.AddRevocation(revocation)
 			}
 
 			So(len(revocations.revocationsByHash), ShouldEqual, 150)
-			So(len(revocations.revocationsByVersion), ShouldEqual, 150)
+			So(revocations.revocationsByVersion.Len(), ShouldEqual, 150)
 			So(revocations.maxVersion, ShouldEqual, 150)
-			So(revocations.minVersion, ShouldEqual, 0)
 
 			Convey("When revokations are cleaned up", func() {
 				revocations.cleanup()
 
 				So(len(revocations.revocationsByHash), ShouldEqual, 50)
-				So(len(revocations.revocationsByVersion), ShouldEqual, 50)
+				So(revocations.revocationsByVersion.Len(), ShouldEqual, 50)
 				So(revocations.maxVersion, ShouldEqual, 150)
-				So(revocations.minVersion, ShouldEqual, 101)
 			})
 		})
 	})
