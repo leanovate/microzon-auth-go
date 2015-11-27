@@ -31,6 +31,7 @@ func (s *Server) TokensResource() routing.Matcher {
 			routing.EndSeq(
 				routing.GETFunc(wrap(resource.logger, resource.VerifyToken)),
 				routing.DELETEFunc(wrap(resource.logger, resource.RevokeToken)),
+				routing.PUTFunc(wrap(resource.logger, resource.RefreshToken)),
 				routing.MethodNotAllowed,
 			),
 		),
@@ -41,25 +42,47 @@ func (r *tokensResource) CreateToken(req *http.Request) (interface{}, error) {
 	selfCert, err := r.store.SelfCertificate()
 	if err != nil {
 		return nil, err
+	} else {
+		return tokens.NewTokenInfo("realm", "user", r.newExpirationTime(), selfCert)
 	}
-	return tokens.NewTokenInfo("realm", "user", time.Now().Add(15*time.Minute), selfCert)
 }
 
 func (r *tokensResource) VerifyToken(req *http.Request) (interface{}, error) {
-	if token, err := jwt.ParseFromRequest(req, r.tokenHandler); err == nil {
-		return tokens.CopyFromToken(token)
+	return r.parseFromRequest(req, tokens.CopyFromToken)
+}
+
+func (r *tokensResource) RefreshToken(req *http.Request) (interface{}, error) {
+	selfCert, err := r.store.SelfCertificate()
+	if err != nil {
+		return nil, err
 	} else {
-		r.logger.Error(err)
-		return nil, Unauthorized()
+		successHandler := func(token *jwt.Token) (interface{}, error) {
+			return tokens.RefreshToken(token, r.newExpirationTime(), selfCert)
+		}
+		return r.parseFromRequest(req, successHandler)
 	}
 }
 
 func (r *tokensResource) RevokeToken(req *http.Request) (interface{}, error) {
-	if token, err := jwt.ParseFromRequest(req, r.tokenHandler); err == nil {
+	successHandler := func(token *jwt.Token) (interface{}, error) {
 		sha256 := revocations.RawSha256FromData(token.Raw)
 		expiresAt := time.Unix((int64)(token.Claims["exp"].(float64)), 0)
 		return nil, r.store.AddRevocation(sha256, expiresAt)
+	}
+	return r.parseFromRequest(req, successHandler)
+}
+
+type SuccessHandler func(token *jwt.Token) (interface{}, error)
+
+func (r *tokensResource) newExpirationTime() time.Time {
+	return time.Now().Add(15 * time.Minute)
+}
+
+func (r *tokensResource) parseFromRequest(req *http.Request, successHandler SuccessHandler) (interface{}, error) {
+	if token, err := jwt.ParseFromRequest(req, r.tokenHandler); err == nil {
+		return successHandler(token)
 	} else {
+		r.logger.Error(err)
 		return nil, Unauthorized()
 	}
 }
