@@ -57,7 +57,7 @@ func (s *memoryStore) CertificateByThumbprint(x5t string) (*x509.Certificate, er
 func (s *memoryStore) AddRevocation(sha256 revocations.RawSha256, expiresAt time.Time) error {
 	version := atomic.AddUint64(&s.revocationVersion, 1)
 
-	s.revocations.AddRevocation(revocations.NewRevocation(version, sha256, expiresAt))
+	s.revocations.AddRevocation(version, sha256, expiresAt)
 
 	return nil
 }

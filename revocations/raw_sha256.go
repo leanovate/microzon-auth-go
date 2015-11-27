@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"github.com/go-errors/errors"
-	"time"
 )
 
 type RawSha256 [32]byte
@@ -30,16 +29,20 @@ func (r RawSha256) String() string {
 	return base64.URLEncoding.EncodeToString(r[:])
 }
 
-type Revocation struct {
-	Version   uint64
-	Sha256    RawSha256
-	ExpiresAt time.Time
+func (r RawSha256) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + r.String() + `"`), nil
 }
 
-func NewRevocation(version uint64, sha256 RawSha256, expiresAt time.Time) *Revocation {
-	return &Revocation{
-		Version:   version,
-		Sha256:    sha256,
-		ExpiresAt: expiresAt,
+func (r RawSha256) UnmarshalJSON(data []byte) error {
+	if data[0] != '"' || data[len(data)-1] != '"' {
+		return errors.New("RawSha256.UnmarshalJSON: Not a json string")
 	}
+	size, err := base64.URLEncoding.Decode(data[1:len(data)-1], r[:])
+	if err != nil {
+		return err
+	}
+	if size != 32 {
+		return errors.New("Invalid sha256")
+	}
+	return nil
 }

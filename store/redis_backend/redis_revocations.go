@@ -1,7 +1,6 @@
 package redis_backend
 
 import (
-	"fmt"
 	"github.com/go-errors/errors"
 	"github.com/leanovate/microzon-auth-go/revocations"
 	"strconv"
@@ -30,7 +29,7 @@ func (r *redisStore) insertRevocation(sha256 revocations.RawSha256, expiresAt ti
 	if err != nil {
 		return err
 	}
+	r.logger.Debugf("Stored revocation sha256=%s version=%v", sha256.String(), result)
 
-	fmt.Printf("%v", result)
 	return nil
 }

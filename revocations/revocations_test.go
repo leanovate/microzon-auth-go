@@ -15,9 +15,8 @@ func TestRevokations(t *testing.T) {
 		Convey("When revokation is added", func() {
 			var hash RawSha256
 			rand.Read(hash[:])
-			revocation := NewRevocation(1, hash, time.Now().Add(10*time.Minute))
 
-			revocations.AddRevocation(revocation)
+			revocations.AddRevocation(1, hash, time.Now().Add(10*time.Minute))
 
 			So(revocations.ContainsHash(hash), ShouldBeTrue)
 			_, ok := revocations.revocationsByVersion.Get(uint64(1))
@@ -48,12 +47,11 @@ func TestRevokations(t *testing.T) {
 		for i := 0; i < 100; i++ {
 			var hash RawSha256
 			rand.Read(hash[:])
-			revocation := NewRevocation(uint64(i+1), hash, past.Add(time.Duration(i)*time.Second))
 
-			revocations.AddRevocation(revocation)
+			revocations.AddRevocation(uint64(i+1), hash, past.Add(time.Duration(i)*time.Second))
 		}
 
-		So(len(revocations.revocationsByHash), ShouldEqual, 100)
+		So(len(revocations.revocationHashes), ShouldEqual, 100)
 		So(revocations.revocationsByVersion.Len(), ShouldEqual, 100)
 		So(revocations.maxVersion, ShouldEqual, 100)
 
@@ -61,13 +59,13 @@ func TestRevokations(t *testing.T) {
 			revocationList := revocations.GetRevocationsSinceVersion(50)
 
 			So(revocationList.Version, ShouldEqual, 100)
-			So(len(revocationList.Revocations), ShouldEqual, 50)
+			So(revocationList.Revocations, ShouldHaveLength, 50)
 		})
 
 		Convey("When revokations are cleaned up", func() {
 			revocations.cleanup()
 
-			So(len(revocations.revocationsByHash), ShouldEqual, 0)
+			So(revocations.revocationHashes, ShouldHaveLength, 0)
 			So(revocations.revocationsByVersion.Len(), ShouldEqual, 0)
 			So(revocations.maxVersion, ShouldEqual, 100)
 		})
@@ -77,19 +75,18 @@ func TestRevokations(t *testing.T) {
 			for i := 0; i < 50; i++ {
 				var hash RawSha256
 				rand.Read(hash[:])
-				revocation := NewRevocation(uint64(101+i), hash, future.Add(time.Duration(i)*time.Second))
 
-				revocations.AddRevocation(revocation)
+				revocations.AddRevocation(uint64(101+i), hash, future.Add(time.Duration(i)*time.Second))
 			}
 
-			So(len(revocations.revocationsByHash), ShouldEqual, 150)
+			So(revocations.revocationHashes, ShouldHaveLength, 150)
 			So(revocations.revocationsByVersion.Len(), ShouldEqual, 150)
 			So(revocations.maxVersion, ShouldEqual, 150)
 
 			Convey("When revokations are cleaned up", func() {
 				revocations.cleanup()
 
-				So(len(revocations.revocationsByHash), ShouldEqual, 50)
+				So(revocations.revocationHashes, ShouldHaveLength, 50)
 				So(revocations.revocationsByVersion.Len(), ShouldEqual, 50)
 				So(revocations.maxVersion, ShouldEqual, 150)
 			})
