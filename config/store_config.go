@@ -7,8 +7,9 @@ import (
 )
 
 type StoreConfig struct {
-	StoreType    string `json:"store_type" yaml:"store_type"`
-	RedisAddress string `json:"redis_address" yaml:"redis_address"`
+	StoreType      string `json:"store_type" yaml:"store_type"`
+	RedisAddress   string `json:"redis_address" yaml:"redis_address"`
+	CertificateTTL uint32 `json:"certificate_ttl" yaml:"certificate_ttl"`
 }
 
 func newStoreConfig(logger logging.Logger) *StoreConfig {
@@ -18,8 +19,9 @@ func newStoreConfig(logger logging.Logger) *StoreConfig {
 			logger.Warnf("Invalid REDIS_PORT environment variable: %s", redisPort)
 		} else {
 			return &StoreConfig{
-				StoreType:    "redis",
-				RedisAddress: redisPortUrl.Host,
+				StoreType:      "redis",
+				RedisAddress:   redisPortUrl.Host,
+				CertificateTTL: 3600,
 			}
 		}
 	}

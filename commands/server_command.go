@@ -4,6 +4,7 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/leanovate/microzon-auth-go/server"
 	"github.com/leanovate/microzon-auth-go/store"
+	"github.com/leanovate/microzon-auth-go/tokens"
 )
 
 // Start in server mode
@@ -21,7 +22,9 @@ func serverCommand(ctx *cli.Context, runCtx *runContext) {
 	}
 	defer store.Close()
 
-	server := server.NewServer(runCtx.config.Server, store, runCtx.logger)
+	tokenManager := tokens.NewTokenManager(runCtx.config.Token, store, runCtx.logger)
+
+	server := server.NewServer(runCtx.config.Server, store, tokenManager, runCtx.logger)
 
 	if err := server.Start(); err != nil {
 		runCtx.logger.ErrorErr(err)

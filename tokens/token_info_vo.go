@@ -25,7 +25,7 @@ const (
 	jwtClaimExpiresAt   = "exp"
 )
 
-func NewTokenInfo(realm, subject string, expiresAt time.Time, signer *certificates.CertWithKey) (*TokenInfoVO, error) {
+func newTokenInfo(realm, subject string, expiresAt time.Time, signer *certificates.CertWithKey) (*TokenInfoVO, error) {
 	token := jwt.New(jwt.SigningMethodRS256)
 	token.Header[jwtHeaderThumbprint] = signer.Thumbprint
 	token.Claims[jwtClaimExpiresAt] = expiresAt.Unix()
@@ -59,8 +59,8 @@ func CopyFromToken(token *jwt.Token) (interface{}, error) {
 	}, nil
 }
 
-func RefreshToken(token *jwt.Token, expirationTime time.Time, signer *certificates.CertWithKey) (interface{}, error) {
-	return NewTokenInfo(token.Claims[jwtClaimRealm].(string), token.Claims[jwtClaimSubject].(string), expirationTime, signer)
+func refreshToken(token *jwt.Token, expirationTime time.Time, signer *certificates.CertWithKey) (*TokenInfoVO, error) {
+	return newTokenInfo(token.Claims[jwtClaimRealm].(string), token.Claims[jwtClaimSubject].(string), expirationTime, signer)
 }
 
 func toSha256(raw string) string {

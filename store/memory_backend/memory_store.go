@@ -36,8 +36,8 @@ func NewMemoryStore(parent logging.Logger) (*memoryStore, error) {
 	}, nil
 }
 
-func (s *memoryStore) SelfCertificate() (*certificates.CertWithKey, error) {
-	return s.selfCertificate, nil
+func (s *memoryStore) SelfCertificate() *certificates.CertWithKey {
+	return s.selfCertificate
 }
 
 func (s *memoryStore) AllCertificates() ([]*x509.Certificate, error) {

@@ -16,7 +16,7 @@ import (
 // Storage backend
 type Store interface {
 	// Get own certificate with private key
-	SelfCertificate() (*certificates.CertWithKey, error)
+	SelfCertificate() *certificates.CertWithKey
 
 	// Get all certificates
 	AllCertificates() ([]*x509.Certificate, error)

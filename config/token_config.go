@@ -1,12 +1,12 @@
 package config
 
 type TokenConfig struct {
-	TokenTimeout uint32 `json:"token_timeout"`
+	TokenTTL uint32 `json:"token_ttl" yaml:"token_ttl"`
 }
 
 func newTokenConfig() *TokenConfig {
 	return &TokenConfig{
-		TokenTimeout: 300,
+		TokenTTL: 300,
 	}
 }
 

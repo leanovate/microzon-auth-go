@@ -1,9 +1,8 @@
-package tokens_test
+package tokens
 
 import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/leanovate/microzon-auth-go/certificates"
-	"github.com/leanovate/microzon-auth-go/tokens"
 	"testing"
 	"time"
 )
@@ -22,7 +21,7 @@ func assertEquals(t *testing.T, x interface{}, y interface{}) {
 
 func TestCreateToken(t *testing.T) {
 	cert, err := certificates.NewCertWithKey("test")
-	tokeninfo, err := tokens.NewTokenInfo("test", "user", time.Now(), cert)
+	tokeninfo, err := newTokenInfo("test", "user", time.Now(), cert)
 	assertNoError(t, err)
 	assertRawTokenInfo(t, tokeninfo.Raw, cert)
 	assertEquals(t, tokeninfo.X5T, cert.Thumbprint)

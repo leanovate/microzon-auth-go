@@ -13,14 +13,16 @@ import (
 )
 
 type tokensResource struct {
-	store  store.Store
-	logger logging.Logger
+	store        store.Store
+	tokenManager *tokens.TokenManager
+	logger       logging.Logger
 }
 
 func (s *Server) TokensResource() routing.Matcher {
 	resource := &tokensResource{
-		store:  s.store,
-		logger: s.logger.WithContext(map[string]interface{}{"resource": "tokens"}),
+		store:        s.store,
+		tokenManager: s.tokenManager,
+		logger:       s.logger.WithContext(map[string]interface{}{"resource": "tokens"}),
 	}
 	return routing.PrefixSeq("/tokens",
 		routing.EndSeq(
@@ -39,12 +41,7 @@ func (s *Server) TokensResource() routing.Matcher {
 }
 
 func (r *tokensResource) CreateToken(req *http.Request) (interface{}, error) {
-	selfCert, err := r.store.SelfCertificate()
-	if err != nil {
-		return nil, err
-	} else {
-		return tokens.NewTokenInfo("realm", "user", r.newExpirationTime(), selfCert)
-	}
+	return r.tokenManager.CreateToken("realm", "user")
 }
 
 func (r *tokensResource) VerifyToken(req *http.Request) (interface{}, error) {
@@ -52,15 +49,10 @@ func (r *tokensResource) VerifyToken(req *http.Request) (interface{}, error) {
 }
 
 func (r *tokensResource) RefreshToken(req *http.Request) (interface{}, error) {
-	selfCert, err := r.store.SelfCertificate()
-	if err != nil {
-		return nil, err
-	} else {
-		successHandler := func(token *jwt.Token) (interface{}, error) {
-			return tokens.RefreshToken(token, r.newExpirationTime(), selfCert)
-		}
-		return r.parseFromRequest(req, successHandler)
+	successHandler := func(token *jwt.Token) (interface{}, error) {
+		return r.tokenManager.RefreshToken(token)
 	}
+	return r.parseFromRequest(req, successHandler)
 }
 
 func (r *tokensResource) RevokeToken(req *http.Request) (interface{}, error) {
