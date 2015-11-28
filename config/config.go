@@ -12,6 +12,7 @@ import (
 type Config struct {
 	Server    *ServerConfig
 	Store     *StoreConfig
+	Token     *TokenConfig
 	configDir string
 }
 
@@ -22,8 +23,9 @@ func NewConfig(configDir string, logger logging.Logger) (*Config, error) {
 	}
 
 	config := Config{
-		Server:    NewServerConfig(),
-		Store:     NewStoreConfig(logger),
+		Server:    newServerConfig(),
+		Store:     newStoreConfig(logger),
+		Token:     newTokenConfig(),
 		configDir: absoluteConfigDir,
 	}
 	files, err := ioutil.ReadDir(absoluteConfigDir)
@@ -45,8 +47,13 @@ func NewConfig(configDir string, logger logging.Logger) (*Config, error) {
 			if err != nil {
 				return nil, err
 			}
+		case !file.IsDir() && strings.HasPrefix(file.Name(), "token."):
+			var err error
+			config.Token, err = readTokenConfig(path.Join(absoluteConfigDir, file.Name()))
+			if err != nil {
+				return nil, err
+			}
 		}
-
 	}
 
 	return &config, nil

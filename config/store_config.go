@@ -7,11 +7,11 @@ import (
 )
 
 type StoreConfig struct {
-	StoreType    string `json:"storeType" yaml:"storeType"`
-	RedisAddress string `json:"redisAddress" yaml:"redisAddress"`
+	StoreType    string `json:"store_type" yaml:"store_type"`
+	RedisAddress string `json:"redis_address" yaml:"redis_address"`
 }
 
-func NewStoreConfig(logger logging.Logger) *StoreConfig {
+func newStoreConfig(logger logging.Logger) *StoreConfig {
 	if redisPort, ok := os.LookupEnv("REDIS_PORT"); ok {
 		redisPortUrl, err := url.Parse(redisPort)
 		if err != nil {

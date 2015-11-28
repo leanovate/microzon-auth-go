@@ -18,12 +18,19 @@ type TokenInfoVO struct {
 	Sha256    string `json:"sha256"`
 }
 
+const (
+	jwtHeaderThumbprint = "x5t"
+	jwtClaimRealm       = "realm"
+	jwtClaimSubject     = "sub"
+	jwtClaimExpiresAt   = "exp"
+)
+
 func NewTokenInfo(realm, subject string, expiresAt time.Time, signer *certificates.CertWithKey) (*TokenInfoVO, error) {
 	token := jwt.New(jwt.SigningMethodRS256)
-	token.Header["x5t"] = signer.Thumbprint
-	token.Claims["exp"] = expiresAt.Unix()
-	token.Claims["sub"] = subject
-	token.Claims["realm"] = realm
+	token.Header[jwtHeaderThumbprint] = signer.Thumbprint
+	token.Claims[jwtClaimExpiresAt] = expiresAt.Unix()
+	token.Claims[jwtClaimSubject] = subject
+	token.Claims[jwtClaimRealm] = realm
 
 	raw, err := token.SignedString(signer.PrivateKey)
 
@@ -44,16 +51,16 @@ func NewTokenInfo(realm, subject string, expiresAt time.Time, signer *certificat
 func CopyFromToken(token *jwt.Token) (interface{}, error) {
 	return &TokenInfoVO{
 		Raw:       token.Raw,
-		Realm:     token.Claims["realm"].(string),
-		Subject:   token.Claims["sub"].(string),
-		ExpiresAt: (int64)(token.Claims["exp"].(float64)),
-		X5T:       token.Header["x5t"].(string),
+		Realm:     token.Claims[jwtClaimRealm].(string),
+		Subject:   token.Claims[jwtClaimSubject].(string),
+		ExpiresAt: (int64)(token.Claims[jwtClaimExpiresAt].(float64)),
+		X5T:       token.Header[jwtHeaderThumbprint].(string),
 		Sha256:    toSha256(token.Raw),
 	}, nil
 }
 
 func RefreshToken(token *jwt.Token, expirationTime time.Time, signer *certificates.CertWithKey) (interface{}, error) {
-	return NewTokenInfo(token.Claims["realm"].(string), token.Claims["sub"].(string), expirationTime, signer)
+	return NewTokenInfo(token.Claims[jwtClaimRealm].(string), token.Claims[jwtClaimSubject].(string), expirationTime, signer)
 }
 
 func toSha256(raw string) string {
