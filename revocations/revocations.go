@@ -11,6 +11,7 @@ import (
 type Revocations struct {
 	Observe              *ObserverGroup
 	lock                 sync.RWMutex
+	logger               logging.Logger
 	revocationHashes     map[RawSha256]bool
 	revocationsByVersion *skiplist.SkipList
 	expirationTimeWheel  *timeWheel
@@ -19,9 +20,10 @@ type Revocations struct {
 
 // Create a new revocations cache
 // Usually there should only be one
-func NewRevokations(logger logging.Logger) *Revocations {
+func NewRevokations(parent logging.Logger) *Revocations {
 	return &Revocations{
-		Observe:          NewObserverGroup(logger),
+		Observe:          NewObserverGroup(parent),
+		logger:           parent.WithContext(map[string]interface{}{"package": "revokations"}),
 		revocationHashes: make(map[RawSha256]bool, 0),
 		revocationsByVersion: skiplist.NewCustomMap(func(l, r interface{}) bool {
 			return l.(uint64) < r.(uint64)
@@ -33,16 +35,17 @@ func NewRevokations(logger logging.Logger) *Revocations {
 
 // Add a revocation
 func (r *Revocations) AddRevocation(version uint64, sha256 RawSha256, expiresAt time.Time) {
+	defer r.Observe.Notify()
+	defer r.expirationTimeWheel.AddEntry(expiresAt, version)
+
 	r.lock.Lock()
 	defer r.lock.Unlock()
-	defer r.Observe.Notify()
 
 	r.revocationHashes[sha256] = true
 	r.revocationsByVersion.Set(version, NewRevokationVO(sha256, expiresAt))
 	if version > r.maxVersion {
 		r.maxVersion = version
 	}
-	r.expirationTimeWheel.AddEntry(expiresAt, version)
 }
 
 // Check if a token hash is contained in the revocations
@@ -72,19 +75,37 @@ func (r *Revocations) GetRevocationsSinceVersion(version uint64) *RevokationList
 	return NewRevokationListVO(r.maxVersion, result)
 }
 
+func (r *Revocations) CurrentVersion() uint64 {
+	return r.maxVersion
+}
+
 // Cleanup expired revocations
 func (r *Revocations) cleanup() {
+	r.logger.Debug("Do cleanup")
 	expiredVersions := r.expirationTimeWheel.GetExpiredVersions(time.Now())
 
 	if len(expiredVersions) == 0 {
+		r.logger.Debug("Nothing to cleanup")
 		return
 	}
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
+	r.logger.Debugf("Cleaning up %d revocations", len(expiredVersions))
 	for _, version := range expiredVersions {
 		if deleted, ok := r.revocationsByVersion.Delete(version); ok {
 			delete(r.revocationHashes, deleted.(*RevocationVO).Sha256)
 		}
+	}
+}
+
+func (r *Revocations) StartCleanup() {
+	r.logger.Debug("Start cleanup loop")
+	for {
+		diff := time.Now().Unix() - r.expirationTimeWheel.lastCleanup
+		if diff <= 0 {
+			time.Sleep(1 * time.Second)
+		}
+		r.cleanup()
 	}
 }

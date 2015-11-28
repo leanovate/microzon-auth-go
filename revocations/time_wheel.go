@@ -78,17 +78,19 @@ func (t *timeWheel) GetExpiredVersions(now time.Time) []uint64 {
 	nowUnix := now.Unix()
 	result := make([]uint64, 0)
 
+	var to, from uint32
 	if nowUnix <= t.lastCleanup || nowUnix-t.lastCleanup >= int64(t.size) {
-		for i := uint32(0); i < t.size; i++ {
-			result = append(result, t.wheel[i].getExpiredVersions(nowUnix)...)
-		}
+		from = 0
+		to = t.size
 	} else {
-		from := t.calculateIndex(t.lastCleanup)
-		to := t.calculateIndex(nowUnix)
-
-		for i := from; (i % t.size) < to; i++ {
-			result = append(result, t.wheel[i%t.size].getExpiredVersions(nowUnix)...)
+		from = t.calculateIndex(t.lastCleanup)
+		to = t.calculateIndex(nowUnix)
+		if to < from {
+			to += t.size
 		}
+	}
+	for i := from; i < to; i++ {
+		result = append(result, t.wheel[i%t.size].getExpiredVersions(nowUnix)...)
 	}
 	t.lastCleanup = nowUnix
 

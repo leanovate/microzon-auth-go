@@ -21,7 +21,7 @@ func TestRevokations(t *testing.T) {
 			So(revocations.ContainsHash(hash), ShouldBeTrue)
 			_, ok := revocations.revocationsByVersion.Get(uint64(1))
 			So(ok, ShouldBeTrue)
-			So(revocations.maxVersion, ShouldEqual, 1)
+			So(revocations.CurrentVersion(), ShouldEqual, 1)
 
 			Convey("When revokation list is queried", func() {
 				revocationList := revocations.GetRevocationsSinceVersion(0)
@@ -36,7 +36,7 @@ func TestRevokations(t *testing.T) {
 				So(revocations.ContainsHash(hash), ShouldBeTrue)
 				_, ok := revocations.revocationsByVersion.Get(uint64(1))
 				So(ok, ShouldBeTrue)
-				So(revocations.maxVersion, ShouldEqual, 1)
+				So(revocations.CurrentVersion(), ShouldEqual, 1)
 			})
 		})
 	})
@@ -53,7 +53,7 @@ func TestRevokations(t *testing.T) {
 
 		So(len(revocations.revocationHashes), ShouldEqual, 100)
 		So(revocations.revocationsByVersion.Len(), ShouldEqual, 100)
-		So(revocations.maxVersion, ShouldEqual, 100)
+		So(revocations.CurrentVersion(), ShouldEqual, 100)
 
 		Convey("When revokation list is queried", func() {
 			revocationList := revocations.GetRevocationsSinceVersion(50)
@@ -67,7 +67,7 @@ func TestRevokations(t *testing.T) {
 
 			So(revocations.revocationHashes, ShouldHaveLength, 0)
 			So(revocations.revocationsByVersion.Len(), ShouldEqual, 0)
-			So(revocations.maxVersion, ShouldEqual, 100)
+			So(revocations.CurrentVersion(), ShouldEqual, 100)
 		})
 
 		Convey("When some non-expired revokations are added", func() {
@@ -81,14 +81,14 @@ func TestRevokations(t *testing.T) {
 
 			So(revocations.revocationHashes, ShouldHaveLength, 150)
 			So(revocations.revocationsByVersion.Len(), ShouldEqual, 150)
-			So(revocations.maxVersion, ShouldEqual, 150)
+			So(revocations.CurrentVersion(), ShouldEqual, 150)
 
 			Convey("When revokations are cleaned up", func() {
 				revocations.cleanup()
 
 				So(revocations.revocationHashes, ShouldHaveLength, 50)
 				So(revocations.revocationsByVersion.Len(), ShouldEqual, 50)
-				So(revocations.maxVersion, ShouldEqual, 150)
+				So(revocations.CurrentVersion(), ShouldEqual, 150)
 			})
 		})
 	})

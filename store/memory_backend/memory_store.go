@@ -25,11 +25,13 @@ func NewMemoryStore(parent logging.Logger) (*memoryStore, error) {
 	if err != nil {
 		return nil, err
 	}
+	revocations := revocations.NewRevokations(parent)
+	go revocations.StartCleanup()
 	return &memoryStore{
 		selfCertificate:   selfCert,
 		certifcatesMap:    map[string]*x509.Certificate{selfCert.Thumbprint: selfCert.Certificate},
 		revocationVersion: 0,
-		revocations:       revocations.NewRevokations(parent),
+		revocations:       revocations,
 		logger:            logger,
 	}, nil
 }
