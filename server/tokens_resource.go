@@ -2,9 +2,7 @@ package server
 
 import (
 	"github.com/dgrijalva/jwt-go"
-	"github.com/go-errors/errors"
 	"github.com/leanovate/microzon-auth-go/logging"
-	"github.com/leanovate/microzon-auth-go/revocations"
 	"github.com/leanovate/microzon-auth-go/store"
 	"github.com/leanovate/microzon-auth-go/tokens"
 	"github.com/untoldwind/routing"
@@ -49,19 +47,11 @@ func (r *tokensResource) VerifyToken(req *http.Request) (interface{}, error) {
 }
 
 func (r *tokensResource) RefreshToken(req *http.Request) (interface{}, error) {
-	successHandler := func(token *jwt.Token) (interface{}, error) {
-		return r.tokenManager.RefreshToken(token)
-	}
-	return r.parseFromRequest(req, successHandler)
+	return r.parseFromRequest(req, r.tokenManager.RefreshToken)
 }
 
 func (r *tokensResource) RevokeToken(req *http.Request) (interface{}, error) {
-	successHandler := func(token *jwt.Token) (interface{}, error) {
-		sha256 := revocations.RawSha256FromData(token.Raw)
-		expiresAt := time.Unix((int64)(token.Claims["exp"].(float64)), 0)
-		return nil, r.store.AddRevocation(sha256, expiresAt)
-	}
-	return r.parseFromRequest(req, successHandler)
+	return r.parseFromRequest(req, r.tokenManager.RevokeToken)
 }
 
 type SuccessHandler func(token *jwt.Token) (interface{}, error)
@@ -71,44 +61,10 @@ func (r *tokensResource) newExpirationTime() time.Time {
 }
 
 func (r *tokensResource) parseFromRequest(req *http.Request, successHandler SuccessHandler) (interface{}, error) {
-	if token, err := jwt.ParseFromRequest(req, r.tokenHandler); err == nil {
+	if token, err := jwt.ParseFromRequest(req, r.tokenManager.TokenHandler); err == nil {
 		return successHandler(token)
 	} else {
 		r.logger.Error(err)
 		return nil, Unauthorized()
 	}
-}
-
-func (r *tokensResource) tokenHandler(token *jwt.Token) (interface{}, error) {
-	r.logger.Debugf("Token: %s", *token)
-	err := r.verifyRevocations(token)
-	if err != nil {
-		return nil, err
-	} else {
-		return r.verifyCertificate(token)
-	}
-}
-
-func (r *tokensResource) verifyCertificate(token *jwt.Token) (interface{}, error) {
-	x5t := token.Header["x5t"]
-	if x5t != nil {
-		if cert, err := r.store.CertificateByThumbprint(x5t.(string)); err != nil || cert == nil {
-			return nil, errors.New("Certificate not found")
-		} else {
-			return cert.PublicKey, nil
-		}
-	} else {
-		return nil, errors.New("No x5t field found in token")
-	}
-}
-
-func (r *tokensResource) verifyRevocations(token *jwt.Token) error {
-	revoked, err := r.store.IsRevoked(revocations.RawSha256FromData(token.Raw))
-	if err != nil {
-		return err
-	}
-	if revoked {
-		return errors.New("Token has been revoked")
-	}
-	return nil
 }

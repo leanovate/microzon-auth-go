@@ -1,21 +1,20 @@
 package tokens
 
 import (
-	"crypto/sha256"
-	"encoding/base64"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-errors/errors"
 	"github.com/leanovate/microzon-auth-go/certificates"
+	"github.com/leanovate/microzon-auth-go/revocations"
 	"time"
 )
 
 type TokenInfoVO struct {
-	Raw       string `json:"raw"`
-	Realm     string `json:"realm"`
-	Subject   string `json:"sub"`
-	ExpiresAt int64  `json:"exp"`
-	X5T       string `json:"x5t"`
-	Sha256    string `json:"sha256"`
+	Raw       string                `json:"raw"`
+	Realm     string                `json:"realm"`
+	Subject   string                `json:"sub"`
+	ExpiresAt int64                 `json:"exp"`
+	X5T       string                `json:"x5t"`
+	Sha256    revocations.RawSha256 `json:"sha256"`
 }
 
 const (
@@ -44,7 +43,7 @@ func newTokenInfo(realm, subject string, expiresAt time.Time, signer *certificat
 		Subject:   subject,
 		ExpiresAt: expiresAt.Unix(),
 		X5T:       signer.Thumbprint,
-		Sha256:    toSha256(raw),
+		Sha256:    revocations.RawSha256FromData(raw),
 	}, nil
 }
 
@@ -55,16 +54,10 @@ func CopyFromToken(token *jwt.Token) (interface{}, error) {
 		Subject:   token.Claims[jwtClaimSubject].(string),
 		ExpiresAt: (int64)(token.Claims[jwtClaimExpiresAt].(float64)),
 		X5T:       token.Header[jwtHeaderThumbprint].(string),
-		Sha256:    toSha256(token.Raw),
+		Sha256:    revocations.RawSha256FromData(token.Raw),
 	}, nil
 }
 
 func refreshToken(token *jwt.Token, expirationTime time.Time, signer *certificates.CertWithKey) (*TokenInfoVO, error) {
 	return newTokenInfo(token.Claims[jwtClaimRealm].(string), token.Claims[jwtClaimSubject].(string), expirationTime, signer)
-}
-
-func toSha256(raw string) string {
-	sha := sha256.New()
-	sha.Write([]byte(raw))
-	return base64.URLEncoding.EncodeToString(sha.Sum(nil))
 }
