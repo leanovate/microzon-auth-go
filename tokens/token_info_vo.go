@@ -37,7 +37,7 @@ func NewTokenInfo(realm, subject string, expiresAt time.Time, signer *certificat
 		Subject:   subject,
 		ExpiresAt: expiresAt.Unix(),
 		X5T:       signer.Thumbprint,
-		Sha256:    ToSha256(raw),
+		Sha256:    toSha256(raw),
 	}, nil
 }
 
@@ -48,11 +48,15 @@ func CopyFromToken(token *jwt.Token) (interface{}, error) {
 		Subject:   token.Claims["sub"].(string),
 		ExpiresAt: (int64)(token.Claims["exp"].(float64)),
 		X5T:       token.Header["x5t"].(string),
-		Sha256:    ToSha256(token.Raw),
+		Sha256:    toSha256(token.Raw),
 	}, nil
 }
 
-func ToSha256(raw string) string {
+func RefreshToken(token *jwt.Token, expirationTime time.Time, signer *certificates.CertWithKey) (interface{}, error) {
+	return NewTokenInfo(token.Claims["realm"].(string), token.Claims["sub"].(string), expirationTime, signer)
+}
+
+func toSha256(raw string) string {
 	sha := sha256.New()
 	sha.Write([]byte(raw))
 	return base64.URLEncoding.EncodeToString(sha.Sum(nil))
