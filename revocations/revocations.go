@@ -22,7 +22,7 @@ type Revocations struct {
 // Usually there should only be one
 func NewRevokations(parent logging.Logger) *Revocations {
 	return &Revocations{
-		Observe:          NewObserverGroup(parent),
+		Observe:          NewObserverGroup(0, parent),
 		logger:           parent.WithContext(map[string]interface{}{"package": "revokations"}),
 		revocationHashes: make(map[RawSha256]bool, 0),
 		revocationsByVersion: skiplist.NewCustomMap(func(l, r interface{}) bool {
@@ -35,16 +35,18 @@ func NewRevokations(parent logging.Logger) *Revocations {
 
 // Add a revocation
 func (r *Revocations) AddRevocation(version uint64, sha256 RawSha256, expiresAt time.Time) {
-	defer r.Observe.Notify()
-	defer r.expirationTimeWheel.AddEntry(expiresAt, version)
-
 	r.lock.Lock()
-	defer r.lock.Unlock()
-
 	r.revocationHashes[sha256] = true
 	r.revocationsByVersion.Set(version, NewRevokationVO(sha256, expiresAt))
+	triggerNotify := false
 	if version > r.maxVersion {
 		r.maxVersion = version
+		triggerNotify = true
+	}
+	r.lock.Unlock()
+	r.expirationTimeWheel.AddEntry(expiresAt, version)
+	if triggerNotify {
+		r.Observe.Notify(ObserverGroupState(version))
 	}
 }
 

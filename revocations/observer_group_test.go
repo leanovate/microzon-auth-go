@@ -9,7 +9,7 @@ import (
 )
 
 func ShouldBlock(actual interface{}, expected ...interface{}) string {
-	channel, actualIsChannel := actual.(chan struct{})
+	channel, actualIsChannel := actual.(chan ObserverGroupState)
 
 	if !actualIsChannel {
 		return fmt.Sprintf("%v should be a channel", actual)
@@ -24,7 +24,7 @@ func ShouldBlock(actual interface{}, expected ...interface{}) string {
 }
 
 func ShouldNotBlock(actual interface{}, expected ...interface{}) string {
-	channel, actualIsChannel := actual.(chan struct{})
+	channel, actualIsChannel := actual.(chan ObserverGroupState)
 
 	if !actualIsChannel {
 		return fmt.Sprintf("%v should be a channel", actual)
@@ -41,11 +41,11 @@ func ShouldNotBlock(actual interface{}, expected ...interface{}) string {
 
 func TestObserverGroup(t *testing.T) {
 	Convey("Given an observer group", t, func() {
-		observerGroup := NewObserverGroup(logging.NewSimpleLoggerNull())
+		observerGroup := NewObserverGroup(0, logging.NewSimpleLoggerNull())
 
 		Convey("And two Observers", func() {
-			observer1 := observerGroup.AddObserver()
-			observer2 := observerGroup.AddObserver()
+			observer1 := observerGroup.AddObserver(0)
+			observer2 := observerGroup.AddObserver(0)
 
 			Convey("Then neither should have received a notify yet", func() {
 				So(observer1, ShouldBlock)
@@ -53,35 +53,46 @@ func TestObserverGroup(t *testing.T) {
 			})
 
 			Convey("When notfication is triggered", func() {
-				observerGroup.Notify()
+				observerGroup.Notify(1)
 
 				So(observer1, ShouldNotBlock)
 				So(observer2, ShouldNotBlock)
+				So(observerGroup.state, ShouldEqual, 1)
+				So(observerGroup.observers, ShouldHaveLength, 0)
 
 				Convey("When notification is triggered a second time", func() {
-					observerGroup.Notify()
+					observerGroup.Notify(2)
 
-					So(observer1, ShouldBlock)
-					So(observer2, ShouldBlock)
+					So(observer1, ShouldNotBlock)
+					So(observer2, ShouldNotBlock)
+					So(observerGroup.state, ShouldEqual, 2)
 				})
 			})
 		})
 
-		Convey("When three observers are attached", func() {
-			observer1 := make(chan struct{}, 1)
-			observer2 := make(chan struct{}, 1)
-			observer3 := make(chan struct{}, 1)
+		Convey("When observer is added to different state", func() {
+			observer := observerGroup.AddObserver(1)
 
-			observerGroup.AttachObserver(observer1)
-			observerGroup.AttachObserver(observer2)
-			observerGroup.AttachObserver(observer3)
+			So(observer, ShouldNotBlock)
+			So(observerGroup.state, ShouldEqual, 0)
+			So(observerGroup.observers, ShouldHaveLength, 0)
+		})
+
+		Convey("When three observers are attached", func() {
+			observer1 := make(chan ObserverGroupState, 1)
+			observer2 := make(chan ObserverGroupState, 1)
+			observer3 := make(chan ObserverGroupState, 1)
+
+			observerGroup.AttachObserver(0, observer1)
+			observerGroup.AttachObserver(0, observer2)
+			observerGroup.AttachObserver(0, observer3)
 
 			So(observer1, ShouldBlock)
 			So(observer2, ShouldBlock)
 			So(observer3, ShouldBlock)
 
 			Convey("When notfication is triggered", func() {
-				observerGroup.Notify()
+				observerGroup.Notify(0)
 
 				So(observer1, ShouldNotBlock)
 				So(observer2, ShouldNotBlock)
@@ -94,7 +105,7 @@ func TestObserverGroup(t *testing.T) {
 				So(result, ShouldBeTrue)
 
 				Convey("When notfication is triggered", func() {
-					observerGroup.Notify()
+					observerGroup.Notify(1)
 
 					So(observer1, ShouldNotBlock)
 					So(observer2, ShouldBlock)
@@ -110,8 +121,8 @@ func TestObserverGroup(t *testing.T) {
 		})
 
 		Convey("When observers are added with timeout", func() {
-			observer1 := observerGroup.AddObserverWithTimeout(1 * time.Second)
-			observer2 := observerGroup.AddObserverWithTimeout(1 * time.Second)
+			observer1 := observerGroup.AddObserverWithTimeout(0, 1 * time.Second)
+			observer2 := observerGroup.AddObserverWithTimeout(0, 1 * time.Second)
 
 			Convey("Then neither should have received a notify yet", func() {
 				So(observer1, ShouldBlock)
@@ -119,7 +130,7 @@ func TestObserverGroup(t *testing.T) {
 			})
 
 			Convey("When notfication is triggered", func() {
-				observerGroup.Notify()
+				observerGroup.Notify(1)
 
 				So(observer1, ShouldNotBlock)
 				So(observer2, ShouldNotBlock)
@@ -130,12 +141,14 @@ func TestObserverGroup(t *testing.T) {
 
 				So(observer1, ShouldNotBlock)
 				So(observer2, ShouldNotBlock)
+				So(observerGroup.observers, ShouldHaveLength, 0)
 
 				Convey("When notification is triggered after timeout", func() {
-					observerGroup.Notify()
+					observerGroup.Notify(1)
 
-					So(observer1, ShouldBlock)
-					So(observer2, ShouldBlock)
+					So(observer1, ShouldNotBlock)
+					So(observer2, ShouldNotBlock)
+					So(observerGroup.state, ShouldEqual, 1)
 				})
 			})
 		})
