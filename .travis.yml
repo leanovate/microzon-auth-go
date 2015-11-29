@@ -1,0 +1,8 @@
+sudo: false
+language: go
+
+services:
+  - redis-server
+
+go:
+  - 1.5
