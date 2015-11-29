@@ -1,5 +1,7 @@
 # microzon-auth-go
 
+[![Build Status](https://travis-ci.org/leanovate/microzon-auth-go.svg?branch=master)](https://travis-ci.org/leanovate/microzon-auth-go)
+
 ## Issue Tracker
 
 See: [microzon-auth](https://github.com/leanovate/microzon-auth)
