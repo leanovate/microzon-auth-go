@@ -57,7 +57,7 @@ func (s *redisStore) AddRevocation(sha256 revocations.RawSha256, expiresAt time.
 	return s.insertRevocation(sha256, expiresAt)
 }
 
-func (s *redisStore) ListRevocations(sinceVersion uint64) (*revocations.RevokationListVO, error) {
+func (s *redisStore) ListRevocations(sinceVersion uint64) (*revocations.RevocationListVO, error) {
 	return s.revocations.GetRevocationsSinceVersion(sinceVersion), nil
 }
 

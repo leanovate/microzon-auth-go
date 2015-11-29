@@ -14,21 +14,22 @@ type certificatesResource struct {
 	logger logging.Logger
 }
 
-func (s *Server) CertificatesRoutes() routing.Matcher {
+func CertificatesRoutes(store store.Store, parent logging.Logger) routing.Matcher {
+	logger := parent.WithContext(map[string]interface{}{"resource": "certificates"})
 	resource := &certificatesResource{
-		store:  s.store,
-		logger: s.logger.WithContext(map[string]interface{}{"resource": "certificates"}),
+		store:  store,
+		logger: logger,
 	}
 	return routing.PrefixSeq("/certificates",
 		routing.EndSeq(
 			routing.GETFunc(wrap(resource.logger, resource.QueryCertificates)),
-			SendError(s.logger, MethodNotAllowed()),
+			SendError(logger, MethodNotAllowed()),
 		),
 		routing.StringPart(
 			func(x5t string) routing.Matcher {
 				return routing.EndSeq(
-					routing.GETFunc(wrap(resource.logger, resource.GetCertBySki(x5t))),
-					SendError(s.logger, MethodNotAllowed()),
+					routing.GETFunc(wrap(resource.logger, resource.GetCertByThumbprint(x5t))),
+					SendError(logger, MethodNotAllowed()),
 				)
 			},
 		),
@@ -47,7 +48,7 @@ func (r *certificatesResource) QueryCertificates(req *http.Request) (interface{}
 	return result, nil
 }
 
-func (r *certificatesResource) GetCertBySki(x5t string) func(req *http.Request) (interface{}, error) {
+func (r *certificatesResource) GetCertByThumbprint(x5t string) func(req *http.Request) (interface{}, error) {
 	return func(req *http.Request) (interface{}, error) {
 		cert, err := r.store.CertificateByThumbprint(x5t)
 		if err != nil {

@@ -4,9 +4,10 @@
 package store
 
 import (
+	x509 "crypto/x509"
 	gomock "github.com/golang/mock/gomock"
 	certificates "github.com/leanovate/microzon-auth-go/certificates"
-	revokations "github.com/leanovate/microzon-auth-go/revocations"
+	revocations "github.com/leanovate/microzon-auth-go/revocations"
 	time "time"
 )
 
@@ -31,20 +32,19 @@ func (_m *MockStore) EXPECT() *_MockStoreRecorder {
 	return _m.recorder
 }
 
-func (_m *MockStore) SelfCerificate() (*certificates.CertWithKey, error) {
-	ret := _m.ctrl.Call(_m, "SelfCerificate")
+func (_m *MockStore) SelfCertificate() *certificates.CertWithKey {
+	ret := _m.ctrl.Call(_m, "SelfCertificate")
 	ret0, _ := ret[0].(*certificates.CertWithKey)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	return ret0
 }
 
-func (_mr *_MockStoreRecorder) SelfCerificate() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "SelfCerificate")
+func (_mr *_MockStoreRecorder) SelfCertificate() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SelfCertificate")
 }
 
-func (_m *MockStore) AllCertificates() ([]*certificates.CertificateVO, error) {
+func (_m *MockStore) AllCertificates() ([]*x509.Certificate, error) {
 	ret := _m.ctrl.Call(_m, "AllCertificates")
-	ret0, _ := ret[0].([]*certificates.CertificateVO)
+	ret0, _ := ret[0].([]*x509.Certificate)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -53,9 +53,9 @@ func (_mr *_MockStoreRecorder) AllCertificates() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "AllCertificates")
 }
 
-func (_m *MockStore) CertificateByThumbprint(x5t string) (*certificates.CertificateVO, error) {
+func (_m *MockStore) CertificateByThumbprint(x5t string) (*x509.Certificate, error) {
 	ret := _m.ctrl.Call(_m, "CertificateByThumbprint", x5t)
-	ret0, _ := ret[0].(*certificates.CertificateVO)
+	ret0, _ := ret[0].(*x509.Certificate)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -64,25 +64,36 @@ func (_mr *_MockStoreRecorder) CertificateByThumbprint(arg0 interface{}) *gomock
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "CertificateByThumbprint", arg0)
 }
 
-func (_m *MockStore) AddRevokation(sha256 string, expiresAt time.Time) error {
-	ret := _m.ctrl.Call(_m, "AddRevokation", sha256, expiresAt)
+func (_m *MockStore) AddRevocation(sha256 revocations.RawSha256, expiresAt time.Time) error {
+	ret := _m.ctrl.Call(_m, "AddRevocation", sha256, expiresAt)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockStoreRecorder) AddRevokation(arg0, arg1 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "AddRevokation", arg0, arg1)
+func (_mr *_MockStoreRecorder) AddRevocation(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "AddRevocation", arg0, arg1)
 }
 
-func (_m *MockStore) ListRevokations(sinceVersion uint64) (*revokations.RevokationListVO, error) {
-	ret := _m.ctrl.Call(_m, "ListRevokations", sinceVersion)
-	ret0, _ := ret[0].(*revokations.RevokationListVO)
+func (_m *MockStore) ListRevocations(sinceVersion uint64) (*revocations.RevocationListVO, error) {
+	ret := _m.ctrl.Call(_m, "ListRevocations", sinceVersion)
+	ret0, _ := ret[0].(*revocations.RevocationListVO)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-func (_mr *_MockStoreRecorder) ListRevokations(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "ListRevokations", arg0)
+func (_mr *_MockStoreRecorder) ListRevocations(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "ListRevocations", arg0)
+}
+
+func (_m *MockStore) IsRevoked(sha256 revocations.RawSha256) (bool, error) {
+	ret := _m.ctrl.Call(_m, "IsRevoked", sha256)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockStoreRecorder) IsRevoked(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "IsRevoked", arg0)
 }
 
 func (_m *MockStore) Close() {

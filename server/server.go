@@ -60,8 +60,8 @@ func (s *Server) routeHandler() http.Handler {
 	return routing.NewRouteHandler(
 		routing.PrefixSeq("/v1",
 			s.TokensResource(),
-			s.CertificatesRoutes(),
-			s.RevocationsRoutes(),
+			CertificatesRoutes(s.store, s.logger),
+			RevocationsRoutes(s.store, s.logger),
 			s.InternalRoutes(),
 		),
 		SendError(s.logger, NotFound()),

@@ -28,7 +28,7 @@ type Store interface {
 	AddRevocation(sha256 revocations.RawSha256, expiresAt time.Time) error
 
 	// List all revocations since version
-	ListRevocations(sinceVersion uint64) (*revocations.RevokationListVO, error)
+	ListRevocations(sinceVersion uint64) (*revocations.RevocationListVO, error)
 
 	// Check if a token is revoked
 	IsRevoked(sha256 revocations.RawSha256) (bool, error)

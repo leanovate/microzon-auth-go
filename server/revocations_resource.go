@@ -12,15 +12,16 @@ type revocationssResource struct {
 	logger logging.Logger
 }
 
-func (s *Server) RevocationsRoutes() routing.Matcher {
+func RevocationsRoutes(store store.Store, parent logging.Logger) routing.Matcher {
+	logger := parent.WithContext(map[string]interface{}{"resource": "revocations"})
 	resource := &revocationssResource{
-		store:  s.store,
-		logger: s.logger.WithContext(map[string]interface{}{"resource": "revocations"}),
+		store:  store,
+		logger: logger,
 	}
 	return routing.PrefixSeq("/revocations",
 		routing.EndSeq(
 			routing.GETFunc(wrap(resource.logger, resource.QueryRevocations)),
-			SendError(s.logger, MethodNotAllowed()),
+			SendError(logger, MethodNotAllowed()),
 		),
 	)
 }

@@ -60,7 +60,7 @@ func (r *Revocations) ContainsHash(sha256 RawSha256) bool {
 }
 
 // Get all revocations since a given version
-func (r *Revocations) GetRevocationsSinceVersion(version uint64) *RevokationListVO {
+func (r *Revocations) GetRevocationsSinceVersion(version uint64) *RevocationListVO {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
@@ -72,7 +72,7 @@ func (r *Revocations) GetRevocationsSinceVersion(version uint64) *RevokationList
 		valid = iterator.Next()
 	}
 
-	return NewRevokationListVO(r.maxVersion, result)
+	return NewRevocationListVO(r.maxVersion, result)
 }
 
 func (r *Revocations) CurrentVersion() uint64 {

@@ -64,7 +64,7 @@ func (s *memoryStore) AddRevocation(sha256 revocations.RawSha256, expiresAt time
 	return nil
 }
 
-func (s *memoryStore) ListRevocations(sinceVersion uint64) (*revocations.RevokationListVO, error) {
+func (s *memoryStore) ListRevocations(sinceVersion uint64) (*revocations.RevocationListVO, error) {
 	return s.revocations.GetRevocationsSinceVersion(sinceVersion), nil
 }
 
