@@ -5,6 +5,7 @@ import (
 	"github.com/leanovate/microzon-auth-go/certificates"
 	"github.com/leanovate/microzon-auth-go/logging"
 	"github.com/leanovate/microzon-auth-go/revocations"
+	"os"
 	"sync/atomic"
 	"time"
 )
@@ -21,7 +22,11 @@ func NewMemoryStore(parent logging.Logger) (*memoryStore, error) {
 	logger := parent.WithContext(map[string]interface{}{"package": "store.memory_backend"})
 	logger.Info("Start store with memory backend...")
 
-	selfCert, err := certificates.NewCertWithKey("signer")
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, err
+	}
+	selfCert, err := certificates.NewCertWithKey(hostname)
 	if err != nil {
 		return nil, err
 	}

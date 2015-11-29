@@ -6,6 +6,7 @@ import (
 	"github.com/leanovate/microzon-auth-go/config"
 	"github.com/leanovate/microzon-auth-go/logging"
 	"github.com/leanovate/microzon-auth-go/revocations"
+	"os"
 	"time"
 )
 
@@ -20,7 +21,11 @@ func NewRedisStore(config *config.StoreConfig, parent logging.Logger) (*redisSto
 	logger := parent.WithContext(map[string]interface{}{"package": "store.redis_backend"})
 	logger.Infof("Start store with redis backend: %s", config.RedisAddress)
 
-	selfCert, err := certificates.NewCertWithKey("signer")
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, err
+	}
+	selfCert, err := certificates.NewCertWithKey(hostname)
 	if err != nil {
 		return nil, err
 	}
