@@ -30,7 +30,7 @@ func (t *TokenManager) CreateToken(realm, subject string) (*TokenInfoVO, error) 
 	if err != nil {
 		return nil, err
 	}
-	expiresAt := time.Now().Add(t.config.TokenTTL * time.Second)
+	expiresAt := time.Now().Add(t.config.TokenTTL)
 	return newTokenInfo(realm, subject, expiresAt, certWithKey)
 }
 
