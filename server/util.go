@@ -23,6 +23,7 @@ func queryParamBool(req *http.Request, key string, defaultValue bool) (bool, err
 	}
 	return strconv.ParseBool(value)
 }
+
 func wrap(logger logging.Logger, handler func(req *http.Request) (interface{}, error)) func(resp http.ResponseWriter, req *http.Request) {
 	f := func(resp http.ResponseWriter, req *http.Request) {
 		logger := logger.WithContext(map[string]interface{}{"url": req.URL, "method": req.Method})
@@ -43,6 +44,36 @@ func wrap(logger logging.Logger, handler func(req *http.Request) (interface{}, e
 				return
 			}
 			resp.Header().Set("Content-Type", "application/json")
+			resp.Write(buf)
+		} else {
+			resp.WriteHeader(http.StatusNoContent)
+		}
+	}
+	return f
+}
+
+func wrapCreate(logger logging.Logger, handler func(req *http.Request) (interface{}, string, error)) func(resp http.ResponseWriter, req *http.Request) {
+	f := func(resp http.ResponseWriter, req *http.Request) {
+		logger := logger.WithContext(map[string]interface{}{"url": req.URL, "method": req.Method})
+		start := time.Now()
+		defer func() {
+			logger.Debugf("http: Request (%v)", time.Now().Sub(start))
+		}()
+		obj, location, err := handler(req)
+		if err != nil {
+			encodeError(logger, resp, req, err)
+			return
+		}
+		if obj != nil {
+			var buf []byte
+			buf, err = json.Marshal(obj)
+			if err != nil {
+				encodeError(logger, resp, req, err)
+				return
+			}
+			resp.Header().Set("Location", location)
+			resp.Header().Set("Content-Type", "application/json")
+			resp.WriteHeader(http.StatusCreated)
 			resp.Write(buf)
 		} else {
 			resp.WriteHeader(http.StatusNoContent)

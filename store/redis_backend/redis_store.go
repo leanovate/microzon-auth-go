@@ -32,10 +32,6 @@ func NewRedisStore(config *config.StoreConfig, parent logging.Logger) (*redisSto
 		config:          config,
 	}
 
-	if err := redisStore.storeSelfCertificate(); err != nil {
-		redisStore.Close()
-		return nil, err
-	}
 	go redisStore.startListenRevocationUpdates()
 	go redisStore.revocations.StartCleanup()
 

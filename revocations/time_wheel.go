@@ -1,9 +1,9 @@
 package revocations
 
 import (
+	"container/heap"
 	"sync"
 	"time"
-	"container/heap"
 )
 
 type timeWheelEntry struct {
@@ -45,7 +45,7 @@ func (t *timeWheelNode) getExpiredVersions(now int64) []uint64 {
 	defer t.lock.Unlock()
 
 	result := make([]uint64, 0)
-	for len(t.heap) >0 && t.heap[0].expiresAt < now {
+	for len(t.heap) > 0 && t.heap[0].expiresAt < now {
 		result = append(result, heap.Pop(&t.heap).(timeWheelEntry).version)
 	}
 

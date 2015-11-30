@@ -34,6 +34,10 @@
 			"Rev": "2dfbae5fcf46374f166f8969cb07e167f1be6273"
 		},
 		{
+			"ImportPath": "github.com/satori/go.uuid",
+			"Rev": "7c7f2020c4c9491594b85767967f4619c2fa75f9"
+		},
+		{
 			"ImportPath": "github.com/smartystreets/assertions",
 			"Comment": "1.5.0-405-g01fedaa",
 			"Rev": "01fedaa993c0a9f9aa55111501cd7c81a49e812e"

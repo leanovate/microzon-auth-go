@@ -1,11 +1,11 @@
 package revocations
 
 import (
+	"container/heap"
 	. "github.com/smartystreets/goconvey/convey"
 	"math/rand"
 	"testing"
 	"time"
-	"container/heap"
 )
 
 func TestTimeWheel(t *testing.T) {

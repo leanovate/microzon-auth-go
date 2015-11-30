@@ -5,11 +5,13 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/leanovate/microzon-auth-go/certificates"
 	"github.com/leanovate/microzon-auth-go/revocations"
+	"github.com/satori/go.uuid"
 	"time"
 )
 
 type TokenInfoVO struct {
 	Raw       string                `json:"raw"`
+	Id        string                `json:"id"`
 	Realm     string                `json:"realm"`
 	Subject   string                `json:"sub"`
 	ExpiresAt int64                 `json:"exp"`
@@ -22,14 +24,17 @@ const (
 	jwtClaimRealm       = "realm"
 	jwtClaimSubject     = "sub"
 	jwtClaimExpiresAt   = "exp"
+	jwtClaimId          = "jti"
 )
 
 func newTokenInfo(realm, subject string, expiresAt time.Time, signer *certificates.CertWithKey) (*TokenInfoVO, error) {
+	id := uuid.NewV1().String()
 	token := jwt.New(jwt.SigningMethodRS256)
 	token.Header[jwtHeaderThumbprint] = signer.Thumbprint
 	token.Claims[jwtClaimExpiresAt] = expiresAt.Unix()
 	token.Claims[jwtClaimSubject] = subject
 	token.Claims[jwtClaimRealm] = realm
+	token.Claims[jwtClaimId] = id
 
 	raw, err := token.SignedString(signer.PrivateKey)
 
@@ -39,6 +44,7 @@ func newTokenInfo(realm, subject string, expiresAt time.Time, signer *certificat
 
 	return &TokenInfoVO{
 		Raw:       raw,
+		Id:        id,
 		Realm:     realm,
 		Subject:   subject,
 		ExpiresAt: expiresAt.Unix(),
@@ -50,6 +56,7 @@ func newTokenInfo(realm, subject string, expiresAt time.Time, signer *certificat
 func CopyFromToken(token *jwt.Token) (interface{}, error) {
 	return &TokenInfoVO{
 		Raw:       token.Raw,
+		Id:        token.Claims[jwtClaimId].(string),
 		Realm:     token.Claims[jwtClaimRealm].(string),
 		Subject:   token.Claims[jwtClaimSubject].(string),
 		ExpiresAt: (int64)(token.Claims[jwtClaimExpiresAt].(float64)),

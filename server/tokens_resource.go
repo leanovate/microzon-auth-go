@@ -24,7 +24,7 @@ func (s *Server) TokensResource() routing.Matcher {
 	}
 	return routing.PrefixSeq("/tokens",
 		routing.EndSeq(
-			routing.POSTFunc(wrap(resource.logger, resource.CreateToken)),
+			routing.POSTFunc(wrapCreate(resource.logger, resource.CreateToken)),
 			routing.MethodNotAllowed,
 		),
 		routing.PrefixSeq("/myself",
@@ -38,8 +38,12 @@ func (s *Server) TokensResource() routing.Matcher {
 	)
 }
 
-func (r *tokensResource) CreateToken(req *http.Request) (interface{}, error) {
-	return r.tokenManager.CreateToken("realm", "user")
+func (r *tokensResource) CreateToken(req *http.Request) (interface{}, string, error) {
+	token, err := r.tokenManager.CreateToken("realm", "user")
+	if err != nil {
+		return nil, "", err
+	}
+	return token, "/tokens/myself", nil
 }
 
 func (r *tokensResource) VerifyToken(req *http.Request) (interface{}, error) {
