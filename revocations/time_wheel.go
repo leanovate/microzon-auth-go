@@ -1,9 +1,9 @@
 package revocations
 
 import (
-	"sort"
 	"sync"
 	"time"
+	"container/heap"
 )
 
 type timeWheelEntry struct {
@@ -16,6 +16,17 @@ type timeWheelHeap []timeWheelEntry
 func (h timeWheelHeap) Len() int           { return len(h) }
 func (h timeWheelHeap) Less(i, j int) bool { return h[i].expiresAt < h[j].expiresAt }
 func (h timeWheelHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+func (h *timeWheelHeap) Push(x interface{}) {
+	*h = append(*h, x.(timeWheelEntry))
+}
+
+func (h *timeWheelHeap) Pop() interface{} {
+	old := *h
+	n := len(old)
+	x := old[n-1]
+	*h = old[0 : n-1]
+	return x
+}
 
 type timeWheelNode struct {
 	lock sync.Mutex
@@ -26,26 +37,17 @@ func (t *timeWheelNode) addEntry(expiresAt int64, version uint64) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
-	t.heap = append(t.heap, timeWheelEntry{expiresAt: expiresAt, version: version})
-	sort.Sort(t.heap)
+	heap.Push(&t.heap, timeWheelEntry{expiresAt: expiresAt, version: version})
 }
 
 func (t *timeWheelNode) getExpiredVersions(now int64) []uint64 {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
-	var index int = 0
-	for index < len(t.heap) && t.heap[index].expiresAt < now {
-		index++
+	result := make([]uint64, 0)
+	for len(t.heap) >0 && t.heap[0].expiresAt < now {
+		result = append(result, heap.Pop(&t.heap).(timeWheelEntry).version)
 	}
-	if index == 0 {
-		return make([]uint64, 0)
-	}
-	result := make([]uint64, 0, index)
-	for i := 0; i < index; i++ {
-		result = append(result, t.heap[i].version)
-	}
-	t.heap = t.heap[:copy(t.heap, t.heap[index:])]
 
 	return result
 }

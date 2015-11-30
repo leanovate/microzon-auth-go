@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"testing"
 	"time"
+	"container/heap"
 )
 
 func TestTimeWheel(t *testing.T) {
@@ -31,12 +32,12 @@ func TestTimeWheel(t *testing.T) {
 			So(expired, ShouldResemble, expected)
 
 			So(node.heap, ShouldHaveLength, 700)
-			expectedRemains := make([]timeWheelEntry, 700)
+			expectedRemains := make([]uint64, 700)
 			for i := 0; i < 700; i++ {
-				expectedRemains[i].expiresAt = start.Add(time.Duration(i+300) * time.Minute).Unix()
-				expectedRemains[i].version = (uint64)(i + 300)
+				expectedRemains[i] = (uint64)(i + 300)
 			}
-			So([]timeWheelEntry(node.heap), ShouldResemble, expectedRemains)
+			actualRemains := node.getExpiredVersions(now.Add(24 * time.Hour).Unix())
+			So(actualRemains, ShouldResemble, expectedRemains)
 		})
 
 		Convey("When expirations are randomly address", func() {
@@ -49,11 +50,14 @@ func TestTimeWheel(t *testing.T) {
 			So(node.heap, ShouldHaveLength, 1000)
 			So(node.getExpiredVersions(now.Unix()), ShouldHaveLength, 0)
 
+			last := heap.Pop(&node.heap).(timeWheelEntry)
 			var i int
 			for i = 1; i < 1000; i++ {
-				if node.heap[i-1].expiresAt > node.heap[i].expiresAt {
+				current := heap.Pop(&node.heap).(timeWheelEntry)
+				if current.expiresAt < last.expiresAt {
 					break
 				}
+				last = current
 			}
 			So(i, ShouldEqual, 1000)
 		})
