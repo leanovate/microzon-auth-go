@@ -30,6 +30,12 @@ type Store interface {
 	// List all revocations since version
 	ListRevocations(sinceVersion uint64) (*revocations.RevocationListVO, error)
 
+	// Get the current revocations version
+	CurrentRevocationsVersion() uint64
+
+	// Observce a specific version of the revocations list (i.e. wait for change)
+	ObserveRevocationsVersion(version uint64, timeout time.Duration) chan revocations.ObserveState
+
 	// Check if a token is revoked
 	IsRevoked(sha256 revocations.RawSha256) (bool, error)
 

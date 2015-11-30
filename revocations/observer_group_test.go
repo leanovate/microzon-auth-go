@@ -9,7 +9,7 @@ import (
 )
 
 func ShouldBlock(actual interface{}, expected ...interface{}) string {
-	channel, actualIsChannel := actual.(chan ObserverGroupState)
+	channel, actualIsChannel := actual.(chan ObserveState)
 
 	if !actualIsChannel {
 		return fmt.Sprintf("%v should be a channel", actual)
@@ -24,7 +24,7 @@ func ShouldBlock(actual interface{}, expected ...interface{}) string {
 }
 
 func ShouldNotBlock(actual interface{}, expected ...interface{}) string {
-	channel, actualIsChannel := actual.(chan ObserverGroupState)
+	channel, actualIsChannel := actual.(chan ObserveState)
 
 	if !actualIsChannel {
 		return fmt.Sprintf("%v should be a channel", actual)
@@ -79,9 +79,9 @@ func TestObserverGroup(t *testing.T) {
 		})
 
 		Convey("When three observers are attached", func() {
-			observer1 := make(chan ObserverGroupState, 1)
-			observer2 := make(chan ObserverGroupState, 1)
-			observer3 := make(chan ObserverGroupState, 1)
+			observer1 := make(chan ObserveState, 1)
+			observer2 := make(chan ObserveState, 1)
+			observer3 := make(chan ObserveState, 1)
 
 			observerGroup.AttachObserver(0, observer1)
 			observerGroup.AttachObserver(0, observer2)
@@ -121,8 +121,8 @@ func TestObserverGroup(t *testing.T) {
 		})
 
 		Convey("When observers are added with timeout", func() {
-			observer1 := observerGroup.AddObserverWithTimeout(0, 1 * time.Second)
-			observer2 := observerGroup.AddObserverWithTimeout(0, 1 * time.Second)
+			observer1 := observerGroup.AddObserverWithTimeout(0, 1*time.Second)
+			observer2 := observerGroup.AddObserverWithTimeout(0, 1*time.Second)
 
 			Convey("Then neither should have received a notify yet", func() {
 				So(observer1, ShouldBlock)

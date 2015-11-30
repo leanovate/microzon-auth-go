@@ -6,30 +6,30 @@ import (
 	"time"
 )
 
-type ObserverGroupState uint64
+type ObserveState uint64
 
 // Manage a group of observers (to any kind of resource)
 // An observer is just a channel receiving an ObserverGroupState as notification
 type ObserverGroup struct {
 	logger    logging.Logger
 	lock      sync.Mutex
-	state ObserverGroupState
-	observers []chan ObserverGroupState
+	state     ObserveState
+	observers []chan ObserveState
 }
 
 // Create a new observer group
 // Usually there should be only one per resource
-func NewObserverGroup(initialState ObserverGroupState, logger logging.Logger) *ObserverGroup {
+func NewObserverGroup(initialState ObserveState, logger logging.Logger) *ObserverGroup {
 	return &ObserverGroup{
 		logger: logger.WithContext(map[string]interface{}{"package": "revokations"}),
-		state: initialState,
+		state:  initialState,
 	}
 }
 
 // Notify all observers in the group
 // Each observer will be notified only once, after notification the observer will
 // be removed from the group
-func (g *ObserverGroup) Notify(nextState ObserverGroupState) {
+func (g *ObserverGroup) Notify(nextState ObserveState) {
 	g.logger.Debug("[ObserverGroup.Notify] waiting for lock ...")
 	g.lock.Lock()
 	defer g.lock.Unlock()
@@ -44,7 +44,7 @@ func (g *ObserverGroup) Notify(nextState ObserverGroupState) {
 }
 
 // Attach an observer to the group
-func (g *ObserverGroup) AttachObserver(atState ObserverGroupState, observer chan ObserverGroupState) {
+func (g *ObserverGroup) AttachObserver(atState ObserveState, observer chan ObserveState) {
 	g.logger.Debug("[ObserverGroup.AttachObserver] waiting for lock ...")
 	g.lock.Lock()
 	defer g.lock.Unlock()
@@ -58,7 +58,7 @@ func (g *ObserverGroup) AttachObserver(atState ObserverGroupState, observer chan
 }
 
 // Detach an observer from the group
-func (g *ObserverGroup) DetachObserver(observer chan ObserverGroupState) bool {
+func (g *ObserverGroup) DetachObserver(observer chan ObserveState) bool {
 	g.logger.Debug("[ObserverGroup.DetachObserver] waiting for lock ...")
 	g.lock.Lock()
 	defer g.lock.Unlock()
@@ -76,17 +76,20 @@ func (g *ObserverGroup) DetachObserver(observer chan ObserverGroupState) bool {
 
 // Convenient function to add an observer to the group
 // Result is a channel that will receive an empty struct{} on notification
-func (g *ObserverGroup) AddObserver(atState ObserverGroupState) chan ObserverGroupState {
-	observer := make(chan ObserverGroupState, 1)
+func (g *ObserverGroup) AddObserver(atState ObserveState) chan ObserveState {
+	observer := make(chan ObserveState, 1)
 	g.AttachObserver(atState, observer)
 	return observer
 }
 
 // Convenient function to add an observer with timeout to the group
 // Result is a channel that is guaranteed to receive a notification within a given amount of time
-func (g *ObserverGroup) AddObserverWithTimeout(atState ObserverGroupState, duration time.Duration) chan ObserverGroupState {
-	observer := make(chan ObserverGroupState, 1)
-	timer := time.NewTimer(duration)
+func (g *ObserverGroup) AddObserverWithTimeout(atState ObserveState, timeout time.Duration) chan ObserveState {
+	if timeout == 0 {
+		return g.AddObserver(atState)
+	}
+	observer := make(chan ObserveState, 1)
+	timer := time.NewTimer(timeout)
 
 	g.AttachObserver(atState, observer)
 	go func() {
@@ -99,7 +102,7 @@ func (g *ObserverGroup) AddObserverWithTimeout(atState ObserverGroupState, durat
 	return observer
 }
 
-func (g *ObserverGroup) notifyObserver(observer chan ObserverGroupState) {
+func (g *ObserverGroup) notifyObserver(observer chan ObserveState) {
 	select {
 	case observer <- g.state:
 		close(observer)

@@ -46,7 +46,7 @@ func (r *Revocations) AddRevocation(version uint64, sha256 RawSha256, expiresAt 
 	r.lock.Unlock()
 	r.expirationTimeWheel.AddEntry(expiresAt, version)
 	if triggerNotify {
-		r.Observe.Notify(ObserverGroupState(version))
+		r.Observe.Notify(ObserveState(version))
 	}
 }
 

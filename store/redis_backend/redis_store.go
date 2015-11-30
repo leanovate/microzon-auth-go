@@ -66,6 +66,14 @@ func (s *redisStore) ListRevocations(sinceVersion uint64) (*revocations.Revocati
 	return s.revocations.GetRevocationsSinceVersion(sinceVersion), nil
 }
 
+func (s *redisStore) CurrentRevocationsVersion() uint64 {
+	return s.revocations.CurrentVersion()
+}
+
+func (s *redisStore) ObserveRevocationsVersion(version uint64, timeout time.Duration) chan revocations.ObserveState {
+	return s.revocations.Observe.AddObserverWithTimeout(revocations.ObserveState(version), timeout)
+}
+
 func (s *redisStore) IsRevoked(sha256 revocations.RawSha256) (bool, error) {
 	return s.revocations.ContainsHash(sha256), nil
 }

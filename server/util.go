@@ -16,6 +16,13 @@ func queryParamUint(req *http.Request, key string, defaultValue uint64) (uint64,
 	return strconv.ParseUint(value, 10, 64)
 }
 
+func queryParamBool(req *http.Request, key string, defaultValue bool) (bool, error) {
+	value := req.FormValue(key)
+	if value == "" {
+		return defaultValue, nil
+	}
+	return strconv.ParseBool(value)
+}
 func wrap(logger logging.Logger, handler func(req *http.Request) (interface{}, error)) func(resp http.ResponseWriter, req *http.Request) {
 	f := func(resp http.ResponseWriter, req *http.Request) {
 		logger := logger.WithContext(map[string]interface{}{"url": req.URL, "method": req.Method})

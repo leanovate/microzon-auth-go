@@ -5,6 +5,7 @@ import (
 	"github.com/leanovate/microzon-auth-go/store"
 	"github.com/untoldwind/routing"
 	"net/http"
+	"time"
 )
 
 type revocationssResource struct {
@@ -30,6 +31,19 @@ func (r *revocationssResource) QueryRevocations(req *http.Request) (interface{},
 	sinceVersion, err := queryParamUint(req, "since_version", 0)
 	if err != nil {
 		return nil, BadRequest()
+	}
+	wait, err := queryParamBool(req, "wait", false)
+	if err != nil {
+		return nil, BadRequest()
+	}
+	timeout, err := queryParamUint(req, "timeout", 0)
+	if err != nil {
+		return nil, BadRequest()
+	}
+
+	if wait {
+		observer := r.store.ObserveRevocationsVersion(sinceVersion, time.Duration(timeout)*time.Second)
+		<-observer
 	}
 	return r.store.ListRevocations(sinceVersion)
 }
