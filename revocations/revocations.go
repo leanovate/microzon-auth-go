@@ -78,6 +78,8 @@ func (r *Revocations) GetRevocationsSinceVersion(version uint64) *RevocationList
 }
 
 func (r *Revocations) CurrentVersion() uint64 {
+	r.lock.RLock()
+	r.lock.RUnlock()
 	return r.maxVersion
 }
 
