@@ -50,7 +50,7 @@ func (t *TokenManager) RevokeToken(token *jwt.Token) (interface{}, error) {
 }
 
 func (r *TokenManager) TokenHandler(token *jwt.Token) (interface{}, error) {
-	r.logger.Debugf("Token: %s", *token)
+	r.logger.Debugf("Token: %v", token)
 	err := r.verifyRevocations(token)
 	if err != nil {
 		return nil, err
@@ -63,7 +63,9 @@ func (r *TokenManager) verifyCertificate(token *jwt.Token) (interface{}, error) 
 	x5t := token.Header[jwtHeaderThumbprint]
 	if x5t != nil {
 		if cert, err := r.store.CertificateByThumbprint(x5t.(string)); err != nil || cert == nil {
-			return nil, errors.New("Certificate not found")
+			return nil, errors.Errorf("Certificate not found: %s", x5t)
+		} else if cert.NotAfter.Before(time.Now()) {
+			return nil, errors.Errorf("Certificate is expired: %s", x5t)
 		} else {
 			return cert.PublicKey, nil
 		}
@@ -73,12 +75,13 @@ func (r *TokenManager) verifyCertificate(token *jwt.Token) (interface{}, error) 
 }
 
 func (r *TokenManager) verifyRevocations(token *jwt.Token) error {
-	revoked, err := r.store.IsRevoked(revocations.RawSha256FromData(token.Raw))
+	sha256 := revocations.RawSha256FromData(token.Raw)
+	revoked, err := r.store.IsRevoked(sha256)
 	if err != nil {
 		return err
 	}
 	if revoked {
-		return errors.New("Token has been revoked")
+		return errors.Errorf("Token has been revoked: %s", sha256.String())
 	}
 	return nil
 }
