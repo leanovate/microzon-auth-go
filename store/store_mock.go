@@ -32,10 +32,11 @@ func (_m *MockStore) EXPECT() *_MockStoreRecorder {
 	return _m.recorder
 }
 
-func (_m *MockStore) SelfCertificate() *certificates.CertWithKey {
+func (_m *MockStore) SelfCertificate() (*certificates.CertWithKey, error) {
 	ret := _m.ctrl.Call(_m, "SelfCertificate")
 	ret0, _ := ret[0].(*certificates.CertWithKey)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 func (_mr *_MockStoreRecorder) SelfCertificate() *gomock.Call {
@@ -83,6 +84,26 @@ func (_m *MockStore) ListRevocations(sinceVersion uint64) (*revocations.Revocati
 
 func (_mr *_MockStoreRecorder) ListRevocations(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "ListRevocations", arg0)
+}
+
+func (_m *MockStore) CurrentRevocationsVersion() uint64 {
+	ret := _m.ctrl.Call(_m, "CurrentRevocationsVersion")
+	ret0, _ := ret[0].(uint64)
+	return ret0
+}
+
+func (_mr *_MockStoreRecorder) CurrentRevocationsVersion() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "CurrentRevocationsVersion")
+}
+
+func (_m *MockStore) ObserveRevocationsVersion(version uint64, timeout time.Duration) chan revocations.ObserveState {
+	ret := _m.ctrl.Call(_m, "ObserveRevocationsVersion", version, timeout)
+	ret0, _ := ret[0].(chan revocations.ObserveState)
+	return ret0
+}
+
+func (_mr *_MockStoreRecorder) ObserveRevocationsVersion(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "ObserveRevocationsVersion", arg0, arg1)
 }
 
 func (_m *MockStore) IsRevoked(sha256 revocations.RawSha256) (bool, error) {

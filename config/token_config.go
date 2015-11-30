@@ -1,12 +1,14 @@
 package config
 
+import "time"
+
 type TokenConfig struct {
-	TokenTTL uint32 `json:"token_ttl" yaml:"token_ttl"`
+	TokenTTL time.Duration `json:"token_ttl" yaml:"token_ttl"`
 }
 
 func newTokenConfig() *TokenConfig {
 	return &TokenConfig{
-		TokenTTL: 300,
+		TokenTTL: 5 * time.Minute,
 	}
 }
 

@@ -24,7 +24,7 @@ func NewConfig(configDir string, logger logging.Logger) (*Config, error) {
 
 	config := Config{
 		Server:    newServerConfig(),
-		Store:     newStoreConfig(logger),
+		Store:     NewStoreConfig(logger),
 		Token:     newTokenConfig(),
 		configDir: absoluteConfigDir,
 	}

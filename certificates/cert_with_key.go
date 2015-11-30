@@ -11,13 +11,14 @@ import (
 )
 
 type CertWithKey struct {
-	Name        string
-	Thumbprint  string
-	PrivateKey  *rsa.PrivateKey
-	Certificate *x509.Certificate
+	Name          string
+	Thumbprint    string
+	ShouldRenewAt time.Time
+	PrivateKey    *rsa.PrivateKey
+	Certificate   *x509.Certificate
 }
 
-func NewCertWithKey(name string) (*CertWithKey, error) {
+func NewCertWithKey(name string, minTTL, maxTTL time.Duration) (*CertWithKey, error) {
 	privateKey, err := generatePrivateKey()
 	if err != nil {
 		return nil, err
@@ -35,8 +36,8 @@ func NewCertWithKey(name string) (*CertWithKey, error) {
 			Organization: []string{"leanovate"},
 		},
 		PublicKey:             privateKey.PublicKey,
-		NotBefore:             time.Now(),
-		NotAfter:              time.Now().Add(24 * time.Hour),
+		NotBefore:             time.Now().Add(-minTTL),
+		NotAfter:              time.Now().Add(maxTTL),
 		KeyUsage:              x509.KeyUsageCRLSign | x509.KeyUsageCertSign,
 		BasicConstraintsValid: true,
 	}
@@ -50,9 +51,10 @@ func NewCertWithKey(name string) (*CertWithKey, error) {
 	}
 
 	return &CertWithKey{
-		Name:        name,
-		Thumbprint:  calculateThumbprint(cert),
-		PrivateKey:  privateKey,
-		Certificate: cert,
+		Name:          name,
+		Thumbprint:    calculateThumbprint(cert),
+		ShouldRenewAt: cert.NotAfter.Add(-minTTL),
+		PrivateKey:    privateKey,
+		Certificate:   cert,
 	}, nil
 }

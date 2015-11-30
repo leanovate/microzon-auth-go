@@ -20,7 +20,7 @@ func assertEquals(t *testing.T, x interface{}, y interface{}) {
 }
 
 func TestCreateToken(t *testing.T) {
-	cert, err := certificates.NewCertWithKey("test")
+	cert, err := certificates.NewCertWithKey("test", 10*time.Minute, 10*time.Minute)
 	tokeninfo, err := newTokenInfo("test", "user", time.Now(), cert)
 	assertNoError(t, err)
 	assertRawTokenInfo(t, tokeninfo.Raw, cert)

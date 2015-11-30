@@ -16,7 +16,7 @@ import (
 // Storage backend
 type Store interface {
 	// Get own certificate with private key
-	SelfCertificate() *certificates.CertWithKey
+	SelfCertificate() (*certificates.CertWithKey, error)
 
 	// Get all certificates
 	AllCertificates() ([]*x509.Certificate, error)
@@ -46,7 +46,7 @@ type Store interface {
 func NewStore(config *config.StoreConfig, logger logging.Logger) (Store, error) {
 	switch strings.ToLower(config.StoreType) {
 	case "memory":
-		return memory_backend.NewMemoryStore(logger)
+		return memory_backend.NewMemoryStore(config, logger)
 	case "redis":
 		return redis_backend.NewRedisStore(config, logger)
 	default:

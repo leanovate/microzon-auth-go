@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"github.com/leanovate/microzon-auth-go/certificates"
+	"github.com/leanovate/microzon-auth-go/config"
 	"github.com/leanovate/microzon-auth-go/logging"
 	"github.com/leanovate/microzon-auth-go/store/memory_backend"
 	. "github.com/smartystreets/goconvey/convey"
@@ -13,7 +14,12 @@ import (
 
 func TestCertificatesResource(t *testing.T) {
 	Convey("Given a certicates resource", t, func() {
-		store, err := memory_backend.NewMemoryStore(logging.NewSimpleLoggerNull())
+		storeConfig := config.NewStoreConfig(logging.NewSimpleLoggerNull())
+		store, err := memory_backend.NewMemoryStore(storeConfig, logging.NewSimpleLoggerNull())
+
+		So(err, ShouldBeNil)
+
+		selfCert, err := store.SelfCertificate()
 
 		So(err, ShouldBeNil)
 
@@ -31,11 +37,11 @@ func TestCertificatesResource(t *testing.T) {
 			err := json.NewDecoder(recorder.Body).Decode(&data)
 			So(err, ShouldBeNil)
 			So(data, ShouldHaveLength, 1)
-			So(data[0].X5t, ShouldEqual, store.SelfCertificate().Thumbprint)
+			So(data[0].X5t, ShouldEqual, selfCert.Thumbprint)
 		})
 
 		Convey("When self certifcate is queried", func() {
-			thumbprint := store.SelfCertificate().Thumbprint
+			thumbprint := selfCert.Thumbprint
 			recorder := httptest.NewRecorder()
 			request, _ := http.NewRequest("GET", "/v1/certificates/"+thumbprint, nil)
 			match := routes("/certificates/"+thumbprint, recorder, request)
@@ -46,7 +52,7 @@ func TestCertificatesResource(t *testing.T) {
 			var data certificates.CertificateVO
 			err := json.NewDecoder(recorder.Body).Decode(&data)
 			So(err, ShouldBeNil)
-			So(data.X5t, ShouldEqual, store.SelfCertificate().Thumbprint)
+			So(data.X5t, ShouldEqual, selfCert.Thumbprint)
 		})
 	})
 }

@@ -26,13 +26,21 @@ func NewTokenManager(config *config.TokenConfig, store store.Store, parent loggi
 }
 
 func (t *TokenManager) CreateToken(realm, subject string) (*TokenInfoVO, error) {
+	certWithKey, err := t.store.SelfCertificate()
+	if err != nil {
+		return nil, err
+	}
 	expiresAt := time.Now().Add(time.Duration(t.config.TokenTTL) * time.Second)
-	return newTokenInfo(realm, subject, expiresAt, t.store.SelfCertificate())
+	return newTokenInfo(realm, subject, expiresAt, certWithKey)
 }
 
 func (t *TokenManager) RefreshToken(token *jwt.Token) (interface{}, error) {
-	expiresAt := time.Now().Add(time.Duration(t.config.TokenTTL) * time.Second)
-	return refreshToken(token, expiresAt, t.store.SelfCertificate())
+	certWithKey, err := t.store.SelfCertificate()
+	if err != nil {
+		return nil, err
+	}
+	expiresAt := time.Now().Add(t.config.TokenTTL)
+	return refreshToken(token, expiresAt, certWithKey)
 }
 
 func (t *TokenManager) RevokeToken(token *jwt.Token) (interface{}, error) {

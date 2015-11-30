@@ -7,33 +7,29 @@ import (
 	"github.com/leanovate/microzon-auth-go/logging"
 	"github.com/leanovate/microzon-auth-go/revocations"
 	"os"
+	"sync"
 	"time"
 )
 
 type redisStore struct {
+	lock            sync.RWMutex
 	selfCertificate *certificates.CertWithKey
 	connector       redisConnector
 	revocations     *revocations.Revocations
 	logger          logging.Logger
+	config          *config.StoreConfig
 }
 
 func NewRedisStore(config *config.StoreConfig, parent logging.Logger) (*redisStore, error) {
 	logger := parent.WithContext(map[string]interface{}{"package": "store.redis_backend"})
 	logger.Infof("Start store with redis backend: %s", config.RedisAddress)
 
-	hostname, err := os.Hostname()
-	if err != nil {
-		return nil, err
-	}
-	selfCert, err := certificates.NewCertWithKey(hostname)
-	if err != nil {
-		return nil, err
-	}
 	redisStore := &redisStore{
-		selfCertificate: selfCert,
+		selfCertificate: nil,
 		connector:       newRedisConnector(config),
 		revocations:     revocations.NewRevokations(parent),
 		logger:          logger,
+		config:          config,
 	}
 
 	if err := redisStore.storeSelfCertificate(); err != nil {
@@ -46,8 +42,34 @@ func NewRedisStore(config *config.StoreConfig, parent logging.Logger) (*redisSto
 	return redisStore, nil
 }
 
-func (r *redisStore) SelfCertificate() *certificates.CertWithKey {
-	return r.selfCertificate
+func (r *redisStore) SelfCertificate() (*certificates.CertWithKey, error) {
+	r.lock.RLock()
+	if r.selfCertificate == nil || r.selfCertificate.ShouldRenewAt.Before(time.Now()) {
+		r.lock.RUnlock()
+		r.lock.Lock()
+		defer r.lock.Unlock()
+
+		if r.selfCertificate == nil || r.selfCertificate.ShouldRenewAt.Before(time.Now()) {
+			r.logger.Info("Creating new certificate")
+			hostname, err := os.Hostname()
+			if err != nil {
+				return nil, err
+			}
+			selfCert, err := certificates.NewCertWithKey(hostname, r.config.MinCertificateTTL, r.config.MaxCertificateTTL)
+			if err != nil {
+				return nil, err
+			}
+			r.selfCertificate = selfCert
+			if err := r.storeSelfCertificate(); err != nil {
+				return nil, err
+			}
+			return r.selfCertificate, nil
+		}
+		return r.selfCertificate, nil
+	}
+	defer r.lock.RUnlock()
+
+	return r.selfCertificate, nil
 }
 
 func (r *redisStore) AllCertificates() ([]*x509.Certificate, error) {
