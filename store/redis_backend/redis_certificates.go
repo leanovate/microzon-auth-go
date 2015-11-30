@@ -70,16 +70,18 @@ func (r *redisStore) scanCertificates() ([]*x509.Certificate, error) {
 			return nil, errors.Wrap(err, 0)
 		}
 		cursor = nextCursor
-		encodedCerts, err := client.MGet(keys...).Result()
-		if err != nil {
-			return nil, errors.Wrap(err, 0)
-		}
-		for _, encodedCert := range encodedCerts {
-			cert, err := decodeCert(encodedCert.(string))
+		if len(keys) > 0 {
+			encodedCerts, err := client.MGet(keys...).Result()
 			if err != nil {
-				r.logger.Warn("Invalid cert in database")
+				return nil, errors.Wrap(err, 0)
 			}
-			result = append(result, cert)
+			for _, encodedCert := range encodedCerts {
+				cert, err := decodeCert(encodedCert.(string))
+				if err != nil {
+					r.logger.Warn("Invalid cert in database")
+				}
+				result = append(result, cert)
+			}
 		}
 	}
 	return result, nil
