@@ -20,7 +20,7 @@ type Revocations struct {
 
 // Create a new revocations cache
 // Usually there should only be one
-func NewRevokations(parent logging.Logger) *Revocations {
+func NewRevocations(parent logging.Logger) *Revocations {
 	return &Revocations{
 		Observe:          NewObserverGroup(0, parent),
 		logger:           parent.WithContext(map[string]interface{}{"package": "revokations"}),
@@ -62,19 +62,24 @@ func (r *Revocations) ContainsHash(sha256 RawSha256) bool {
 }
 
 // Get all revocations since a given version
-func (r *Revocations) GetRevocationsSinceVersion(version uint64) *RevocationListVO {
+func (r *Revocations) GetRevocationsSinceVersion(version uint64, maxLength uint) *RevocationListVO {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
 	result := make([]*RevocationVO, 0)
 	iterator := r.revocationsByVersion.Iterator()
+	maxVersion := uint64(0)
 	valid := iterator.Seek(version + 1)
-	for valid {
+	for count := uint(0); valid && count < maxLength; count++ {
+		version := iterator.Key().(uint64)
+		if version > maxVersion {
+			maxVersion = version
+		}
 		result = append(result, iterator.Value().(*RevocationVO))
 		valid = iterator.Next()
 	}
 
-	return NewRevocationListVO(r.maxVersion, result)
+	return NewRevocationListVO(maxVersion, result)
 }
 
 func (r *Revocations) CurrentVersion() uint64 {

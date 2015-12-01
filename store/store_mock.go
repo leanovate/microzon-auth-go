@@ -75,15 +75,15 @@ func (_mr *_MockStoreRecorder) AddRevocation(arg0, arg1 interface{}) *gomock.Cal
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "AddRevocation", arg0, arg1)
 }
 
-func (_m *MockStore) ListRevocations(sinceVersion uint64) (*revocations.RevocationListVO, error) {
-	ret := _m.ctrl.Call(_m, "ListRevocations", sinceVersion)
+func (_m *MockStore) ListRevocations(sinceVersion uint64, maxLength uint) (*revocations.RevocationListVO, error) {
+	ret := _m.ctrl.Call(_m, "ListRevocations", sinceVersion, maxLength)
 	ret0, _ := ret[0].(*revocations.RevocationListVO)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-func (_mr *_MockStoreRecorder) ListRevocations(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "ListRevocations", arg0)
+func (_mr *_MockStoreRecorder) ListRevocations(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "ListRevocations", arg0, arg1)
 }
 
 func (_m *MockStore) CurrentRevocationsVersion() uint64 {

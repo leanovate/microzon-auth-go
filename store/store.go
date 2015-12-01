@@ -28,7 +28,7 @@ type Store interface {
 	AddRevocation(sha256 revocations.RawSha256, expiresAt time.Time) error
 
 	// List all revocations since version
-	ListRevocations(sinceVersion uint64) (*revocations.RevocationListVO, error)
+	ListRevocations(sinceVersion uint64, maxLength uint) (*revocations.RevocationListVO, error)
 
 	// Get the current revocations version
 	CurrentRevocationsVersion() uint64

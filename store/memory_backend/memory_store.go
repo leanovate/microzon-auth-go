@@ -26,7 +26,7 @@ func NewMemoryStore(config *config.StoreConfig, parent logging.Logger) (*memoryS
 	logger := parent.WithContext(map[string]interface{}{"package": "store.memory_backend"})
 	logger.Info("Start store with memory backend...")
 
-	revocations := revocations.NewRevokations(parent)
+	revocations := revocations.NewRevocations(parent)
 	go revocations.StartCleanup()
 	return &memoryStore{
 		selfCertificate:   nil,
@@ -90,8 +90,8 @@ func (s *memoryStore) AddRevocation(sha256 revocations.RawSha256, expiresAt time
 	return nil
 }
 
-func (s *memoryStore) ListRevocations(sinceVersion uint64) (*revocations.RevocationListVO, error) {
-	return s.revocations.GetRevocationsSinceVersion(sinceVersion), nil
+func (s *memoryStore) ListRevocations(sinceVersion uint64, maxLength uint) (*revocations.RevocationListVO, error) {
+	return s.revocations.GetRevocationsSinceVersion(sinceVersion, maxLength), nil
 }
 
 func (s *memoryStore) CurrentRevocationsVersion() uint64 {

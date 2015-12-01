@@ -10,7 +10,7 @@ import (
 
 func TestRevokations(t *testing.T) {
 	Convey("Given an empty revokations list", t, func() {
-		revocations := NewRevokations(logging.NewSimpleLoggerNull())
+		revocations := NewRevocations(logging.NewSimpleLoggerNull())
 
 		Convey("When revokation is added", func() {
 			var hash RawSha256
@@ -24,7 +24,7 @@ func TestRevokations(t *testing.T) {
 			So(revocations.CurrentVersion(), ShouldEqual, 1)
 
 			Convey("When revokation list is queried", func() {
-				revocationList := revocations.GetRevocationsSinceVersion(0)
+				revocationList := revocations.GetRevocationsSinceVersion(0, 200)
 
 				So(revocationList.Version, ShouldEqual, 1)
 				So(len(revocationList.Revocations), ShouldEqual, 1)
@@ -42,7 +42,7 @@ func TestRevokations(t *testing.T) {
 	})
 
 	Convey("Given revokations list with expired entries", t, func() {
-		revocations := NewRevokations(logging.NewSimpleLoggerNull())
+		revocations := NewRevocations(logging.NewSimpleLoggerNull())
 		past := time.Now().Add(-10 * time.Minute)
 		for i := 0; i < 100; i++ {
 			var hash RawSha256
@@ -56,7 +56,7 @@ func TestRevokations(t *testing.T) {
 		So(revocations.CurrentVersion(), ShouldEqual, 100)
 
 		Convey("When revokation list is queried", func() {
-			revocationList := revocations.GetRevocationsSinceVersion(50)
+			revocationList := revocations.GetRevocationsSinceVersion(50, 200)
 
 			So(revocationList.Version, ShouldEqual, 100)
 			So(revocationList.Revocations, ShouldHaveLength, 50)

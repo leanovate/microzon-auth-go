@@ -27,7 +27,7 @@ func NewRedisStore(config *config.StoreConfig, parent logging.Logger) (*redisSto
 	redisStore := &redisStore{
 		selfCertificate: nil,
 		connector:       newRedisConnector(config),
-		revocations:     revocations.NewRevokations(parent),
+		revocations:     revocations.NewRevocations(parent),
 		logger:          logger,
 		config:          config,
 	}
@@ -80,8 +80,8 @@ func (s *redisStore) AddRevocation(sha256 revocations.RawSha256, expiresAt time.
 	return s.insertRevocation(sha256, expiresAt)
 }
 
-func (s *redisStore) ListRevocations(sinceVersion uint64) (*revocations.RevocationListVO, error) {
-	return s.revocations.GetRevocationsSinceVersion(sinceVersion), nil
+func (s *redisStore) ListRevocations(sinceVersion uint64, maxLength uint) (*revocations.RevocationListVO, error) {
+	return s.revocations.GetRevocationsSinceVersion(sinceVersion, maxLength), nil
 }
 
 func (s *redisStore) CurrentRevocationsVersion() uint64 {

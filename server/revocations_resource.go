@@ -45,5 +45,5 @@ func (r *revocationssResource) QueryRevocations(req *http.Request) (interface{},
 		observer := r.store.ObserveRevocationsVersion(sinceVersion, time.Duration(timeout)*time.Second)
 		<-observer
 	}
-	return r.store.ListRevocations(sinceVersion)
+	return r.store.ListRevocations(sinceVersion, 200)
 }
