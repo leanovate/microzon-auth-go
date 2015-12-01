@@ -3,6 +3,7 @@ package tokens
 import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-errors/errors"
+	"github.com/leanovate/microzon-auth-go/certificates"
 	"github.com/leanovate/microzon-auth-go/config"
 	"github.com/leanovate/microzon-auth-go/logging"
 	"github.com/leanovate/microzon-auth-go/revocations"
@@ -11,22 +12,24 @@ import (
 )
 
 type TokenManager struct {
-	logger logging.Logger
-	config *config.TokenConfig
-	store  store.Store
+	logger             logging.Logger
+	config             *config.TokenConfig
+	certificateManager *certificates.CertificateManager
+	store              store.Store
 }
 
-func NewTokenManager(config *config.TokenConfig, store store.Store, parent logging.Logger) *TokenManager {
+func NewTokenManager(config *config.TokenConfig, certificateManager *certificates.CertificateManager, store store.Store, parent logging.Logger) *TokenManager {
 
 	return &TokenManager{
-		logger: parent.WithContext(map[string]interface{}{"package": "tokens"}),
-		config: config,
-		store:  store,
+		logger:             parent.WithContext(map[string]interface{}{"package": "tokens"}),
+		config:             config,
+		certificateManager: certificateManager,
+		store:              store,
 	}
 }
 
 func (t *TokenManager) CreateToken(realm, subject string) (*TokenInfoVO, error) {
-	certWithKey, err := t.store.SelfCertificate()
+	certWithKey, err := t.certificateManager.GetSelfCertificate()
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +38,7 @@ func (t *TokenManager) CreateToken(realm, subject string) (*TokenInfoVO, error) 
 }
 
 func (t *TokenManager) RefreshToken(token *jwt.Token) (interface{}, error) {
-	certWithKey, err := t.store.SelfCertificate()
+	certWithKey, err := t.certificateManager.GetSelfCertificate()
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +65,7 @@ func (r *TokenManager) TokenHandler(token *jwt.Token) (interface{}, error) {
 func (r *TokenManager) verifyCertificate(token *jwt.Token) (interface{}, error) {
 	x5t := token.Header[jwtHeaderThumbprint]
 	if x5t != nil {
-		if cert, err := r.store.CertificateByThumbprint(x5t.(string)); err != nil || cert == nil {
+		if cert, err := r.certificateManager.FindCertificate(x5t.(string)); err != nil || cert == nil {
 			return nil, errors.Errorf("Certificate not found: %s", x5t)
 		} else if cert.NotAfter.Before(time.Now()) {
 			return nil, errors.Errorf("Certificate is expired: %s", x5t)

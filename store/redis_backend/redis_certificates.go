@@ -27,10 +27,10 @@ func decodeCert(encoded string) (*x509.Certificate, error) {
 	return x509.ParseCertificate(certBlock.Bytes)
 }
 
-func (r *redisStore) storeSelfCertificate() error {
-	key := certificateKey(r.selfCertificate.Thumbprint)
-	value := encodeCert(r.selfCertificate.Certificate)
-	expiration := r.selfCertificate.Certificate.NotAfter.Sub(time.Now())
+func (r *redisStore) AddCertificate(thumbprint string, certificate *x509.Certificate) error {
+	key := certificateKey(thumbprint)
+	value := encodeCert(certificate)
+	expiration := certificate.NotAfter.Sub(time.Now())
 
 	client, err := r.connector.getClient(key)
 	if err != nil {
@@ -42,8 +42,8 @@ func (r *redisStore) storeSelfCertificate() error {
 	return nil
 }
 
-func (r *redisStore) removeSelfCertificate() error {
-	key := certificateKey(r.selfCertificate.Thumbprint)
+func (r *redisStore) RemoveCertificate(thumbprint string) error {
+	key := certificateKey(thumbprint)
 	client, err := r.connector.getClient(key)
 	if err != nil {
 		return errors.Wrap(err, 0)

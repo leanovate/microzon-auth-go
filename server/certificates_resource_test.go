@@ -16,14 +16,15 @@ func TestCertificatesResource(t *testing.T) {
 	Convey("Given a certicates resource", t, func() {
 		storeConfig := config.NewStoreConfig(logging.NewSimpleLoggerNull())
 		store, err := memory_backend.NewMemoryStore(storeConfig, logging.NewSimpleLoggerNull())
+		certificateManager := certificates.NewCertificateManager(store, storeConfig, logging.NewSimpleLoggerNull())
 
 		So(err, ShouldBeNil)
 
-		selfCert, err := store.SelfCertificate()
+		selfCert, err := certificateManager.GetSelfCertificate()
 
 		So(err, ShouldBeNil)
 
-		routes := CertificatesRoutes(store, logging.NewSimpleLoggerNull())
+		routes := CertificatesRoutes(certificateManager, logging.NewSimpleLoggerNull())
 
 		Convey("When all certificates are queried requested", func() {
 			recorder := httptest.NewRecorder()

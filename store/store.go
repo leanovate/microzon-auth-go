@@ -3,7 +3,6 @@ package store
 import (
 	"crypto/x509"
 	"github.com/go-errors/errors"
-	"github.com/leanovate/microzon-auth-go/certificates"
 	"github.com/leanovate/microzon-auth-go/config"
 	"github.com/leanovate/microzon-auth-go/logging"
 	"github.com/leanovate/microzon-auth-go/revocations"
@@ -15,14 +14,17 @@ import (
 
 // Storage backend
 type Store interface {
-	// Get own certificate with private key
-	SelfCertificate() (*certificates.CertWithKey, error)
+	// Add a certificate to the store
+	AddCertificate(thumbprint string, certificate *x509.Certificate) error
+
+	// Find/lookup a certificate by its thumbprint
+	FindCertificate(thumbprint string) (*x509.Certificate, error)
 
 	// Get all certificates
 	AllCertificates() ([]*x509.Certificate, error)
 
-	// Get a certificate by its SKI
-	CertificateByThumbprint(x5t string) (*x509.Certificate, error)
+	// Remove a certificate by is thumbprint
+	RemoveCertificate(thumbprint string) error
 
 	// Add a revocation
 	AddRevocation(sha256 revocations.RawSha256, expiresAt time.Time) error

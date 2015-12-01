@@ -2,11 +2,9 @@ package memory_backend
 
 import (
 	"crypto/x509"
-	"github.com/leanovate/microzon-auth-go/certificates"
 	"github.com/leanovate/microzon-auth-go/config"
 	"github.com/leanovate/microzon-auth-go/logging"
 	"github.com/leanovate/microzon-auth-go/revocations"
-	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -14,7 +12,6 @@ import (
 
 type memoryStore struct {
 	lock              sync.RWMutex
-	selfCertificate   *certificates.CertWithKey
 	certificatesMap   map[string]*x509.Certificate
 	revocationVersion uint64
 	revocations       *revocations.Revocations
@@ -29,7 +26,6 @@ func NewMemoryStore(config *config.StoreConfig, parent logging.Logger) (*memoryS
 	revocations := revocations.NewRevocations(parent)
 	go revocations.StartCleanup()
 	return &memoryStore{
-		selfCertificate:   nil,
 		certificatesMap:   make(map[string]*x509.Certificate, 0),
 		revocationVersion: 0,
 		revocations:       revocations,
@@ -38,32 +34,14 @@ func NewMemoryStore(config *config.StoreConfig, parent logging.Logger) (*memoryS
 	}, nil
 }
 
-func (s *memoryStore) SelfCertificate() (*certificates.CertWithKey, error) {
-	s.lock.RLock()
-	if s.selfCertificate == nil || s.selfCertificate.ShouldRenewAt.Before(time.Now()) {
-		s.lock.RUnlock()
-		s.lock.Lock()
-		defer s.lock.Unlock()
+func (r *memoryStore) AddCertificate(thumbprint string, certificate *x509.Certificate) error {
+	r.certificatesMap[thumbprint] = certificate
+	return nil
+}
 
-		if s.selfCertificate == nil || s.selfCertificate.ShouldRenewAt.Before(time.Now()) {
-			s.logger.Info("Creating new certificate")
-			hostname, err := os.Hostname()
-			if err != nil {
-				return nil, err
-			}
-			selfCert, err := certificates.NewCertWithKey(hostname, s.config.MinCertificateTTL, s.config.MaxCertificateTTL)
-			if err != nil {
-				return nil, err
-			}
-			s.certificatesMap[selfCert.Thumbprint] = selfCert.Certificate
-			s.selfCertificate = selfCert
-			return s.selfCertificate, nil
-		}
-		return s.selfCertificate, nil
-	}
-	defer s.lock.RUnlock()
-
-	return s.selfCertificate, nil
+func (r *memoryStore) RemoveCertificate(thumbprint string) error {
+	delete(r.certificatesMap, thumbprint)
+	return nil
 }
 
 func (s *memoryStore) AllCertificates() ([]*x509.Certificate, error) {
@@ -75,8 +53,8 @@ func (s *memoryStore) AllCertificates() ([]*x509.Certificate, error) {
 	return result, nil
 }
 
-func (s *memoryStore) CertificateByThumbprint(x5t string) (*x509.Certificate, error) {
-	if certificate, ok := s.certificatesMap[x5t]; ok {
+func (s *memoryStore) FindCertificate(thumbprint string) (*x509.Certificate, error) {
+	if certificate, ok := s.certificatesMap[thumbprint]; ok {
 		return certificate, nil
 	}
 	return nil, nil

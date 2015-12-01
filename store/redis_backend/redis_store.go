@@ -2,22 +2,19 @@ package redis_backend
 
 import (
 	"crypto/x509"
-	"github.com/leanovate/microzon-auth-go/certificates"
 	"github.com/leanovate/microzon-auth-go/config"
 	"github.com/leanovate/microzon-auth-go/logging"
 	"github.com/leanovate/microzon-auth-go/revocations"
-	"os"
 	"sync"
 	"time"
 )
 
 type redisStore struct {
-	lock            sync.RWMutex
-	selfCertificate *certificates.CertWithKey
-	connector       redisConnector
-	revocations     *revocations.Revocations
-	logger          logging.Logger
-	config          *config.StoreConfig
+	lock        sync.RWMutex
+	connector   redisConnector
+	revocations *revocations.Revocations
+	logger      logging.Logger
+	config      *config.StoreConfig
 }
 
 func NewRedisStore(config *config.StoreConfig, parent logging.Logger) (*redisStore, error) {
@@ -25,11 +22,10 @@ func NewRedisStore(config *config.StoreConfig, parent logging.Logger) (*redisSto
 	logger.Infof("Start store with redis backend: %s", config.RedisAddress)
 
 	redisStore := &redisStore{
-		selfCertificate: nil,
-		connector:       newRedisConnector(config),
-		revocations:     revocations.NewRevocations(parent),
-		logger:          logger,
-		config:          config,
+		connector:   newRedisConnector(config),
+		revocations: revocations.NewRevocations(parent),
+		logger:      logger,
+		config:      config,
 	}
 
 	go redisStore.startListenRevocationUpdates()
@@ -42,42 +38,12 @@ func NewRedisStore(config *config.StoreConfig, parent logging.Logger) (*redisSto
 	return redisStore, nil
 }
 
-func (r *redisStore) SelfCertificate() (*certificates.CertWithKey, error) {
-	r.lock.RLock()
-	if r.selfCertificate == nil || r.selfCertificate.ShouldRenewAt.Before(time.Now()) {
-		r.lock.RUnlock()
-		r.lock.Lock()
-		defer r.lock.Unlock()
-
-		if r.selfCertificate == nil || r.selfCertificate.ShouldRenewAt.Before(time.Now()) {
-			r.logger.Info("Creating new certificate")
-			hostname, err := os.Hostname()
-			if err != nil {
-				return nil, err
-			}
-			selfCert, err := certificates.NewCertWithKey(hostname, r.config.MinCertificateTTL, r.config.MaxCertificateTTL)
-			if err != nil {
-				return nil, err
-			}
-			r.selfCertificate = selfCert
-			if err := r.storeSelfCertificate(); err != nil {
-				return nil, err
-			}
-			return r.selfCertificate, nil
-		}
-		return r.selfCertificate, nil
-	}
-	defer r.lock.RUnlock()
-
-	return r.selfCertificate, nil
-}
-
 func (r *redisStore) AllCertificates() ([]*x509.Certificate, error) {
 	return r.scanCertificates()
 }
 
-func (r *redisStore) CertificateByThumbprint(x5t string) (*x509.Certificate, error) {
-	return r.getCertificateByX5t(x5t)
+func (r *redisStore) FindCertificate(thumbprint string) (*x509.Certificate, error) {
+	return r.getCertificateByX5t(thumbprint)
 }
 
 func (s *redisStore) AddRevocation(sha256 revocations.RawSha256, expiresAt time.Time) error {
@@ -102,6 +68,5 @@ func (s *redisStore) IsRevoked(sha256 revocations.RawSha256) (bool, error) {
 
 func (r *redisStore) Close() {
 	r.logger.Info("Closing store with redis backend...")
-	r.removeSelfCertificate()
 	r.connector.close()
 }

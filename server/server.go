@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/leanovate/microzon-auth-go/certificates"
 	"github.com/leanovate/microzon-auth-go/config"
 	"github.com/leanovate/microzon-auth-go/logging"
 	"github.com/leanovate/microzon-auth-go/store"
@@ -13,19 +14,21 @@ import (
 )
 
 type Server struct {
-	config       *config.ServerConfig
-	store        store.Store
-	tokenManager *tokens.TokenManager
-	listener     net.Listener
-	logger       logging.Logger
+	config             *config.ServerConfig
+	store              store.Store
+	certificateManager *certificates.CertificateManager
+	tokenManager       *tokens.TokenManager
+	listener           net.Listener
+	logger             logging.Logger
 }
 
-func NewServer(config *config.ServerConfig, store store.Store, tokenManager *tokens.TokenManager, logger logging.Logger) *Server {
+func NewServer(config *config.ServerConfig, store store.Store, certificateManager *certificates.CertificateManager, tokenManager *tokens.TokenManager, logger logging.Logger) *Server {
 	return &Server{
-		config:       config,
-		store:        store,
-		tokenManager: tokenManager,
-		logger:       logger.WithContext(map[string]interface{}{"package": "server"}),
+		config:             config,
+		store:              store,
+		certificateManager: certificateManager,
+		tokenManager:       tokenManager,
+		logger:             logger.WithContext(map[string]interface{}{"package": "server"}),
 	}
 }
 
@@ -60,7 +63,7 @@ func (s *Server) routeHandler() http.Handler {
 	return routing.NewRouteHandler(
 		routing.PrefixSeq("/v1",
 			s.TokensResource(),
-			CertificatesRoutes(s.store, s.logger),
+			CertificatesRoutes(s.certificateManager, s.logger),
 			RevocationsRoutes(s.store, s.logger),
 			s.InternalRoutes(),
 		),

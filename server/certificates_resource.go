@@ -5,20 +5,19 @@ import (
 
 	"github.com/leanovate/microzon-auth-go/certificates"
 	"github.com/leanovate/microzon-auth-go/logging"
-	"github.com/leanovate/microzon-auth-go/store"
 	"github.com/untoldwind/routing"
 )
 
 type certificatesResource struct {
-	store  store.Store
-	logger logging.Logger
+	certificateManager *certificates.CertificateManager
+	logger             logging.Logger
 }
 
-func CertificatesRoutes(store store.Store, parent logging.Logger) routing.Matcher {
+func CertificatesRoutes(certificateManager *certificates.CertificateManager, parent logging.Logger) routing.Matcher {
 	logger := parent.WithContext(map[string]interface{}{"resource": "certificates"})
 	resource := &certificatesResource{
-		store:  store,
-		logger: logger,
+		certificateManager: certificateManager,
+		logger:             logger,
 	}
 	return routing.PrefixSeq("/certificates",
 		routing.EndSeq(
@@ -37,7 +36,7 @@ func CertificatesRoutes(store store.Store, parent logging.Logger) routing.Matche
 }
 
 func (r *certificatesResource) QueryCertificates(req *http.Request) (interface{}, error) {
-	certs, err := r.store.AllCertificates()
+	certs, err := r.certificateManager.ListAllCertificates()
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +49,7 @@ func (r *certificatesResource) QueryCertificates(req *http.Request) (interface{}
 
 func (r *certificatesResource) GetCertByThumbprint(x5t string) func(req *http.Request) (interface{}, error) {
 	return func(req *http.Request) (interface{}, error) {
-		cert, err := r.store.CertificateByThumbprint(x5t)
+		cert, err := r.certificateManager.FindCertificate(x5t)
 		if err != nil {
 			return nil, err
 		}
