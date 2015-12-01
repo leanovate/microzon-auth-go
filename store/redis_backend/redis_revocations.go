@@ -20,8 +20,37 @@ return version
 const keyRevocationsPublish = "revocations"
 const keyRevocationVersionCounter = "revocations:version"
 
-func revocationKey(version uint64) string {
-	return fmt.Sprintf("revocations:version:%d", version)
+func revocationKey(version string) string {
+	return fmt.Sprintf("revocations:version:%s", version)
+}
+
+func (r *redisStore) scanRevocations() error {
+	client, err := r.connector.getClient("")
+	if err != nil {
+		return errors.Wrap(err, 0)
+	}
+	var cursor int64 = 0
+	first := true
+	for first || cursor != 0 {
+		first = false
+		nextCursor, keys, err := client.Scan(cursor, revocationKey("*"), 0).Result()
+		if err != nil {
+			return errors.Wrap(err, 0)
+		}
+		cursor = nextCursor
+		if len(keys) > 0 {
+			encodedRevocations, err := client.MGet(keys...).Result()
+			if err != nil {
+				return errors.Wrap(err, 0)
+			}
+			for _, encodedRevocation := range encodedRevocations {
+				if err := r.decodeAndAddRevocation(encodedRevocation.(string)); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func (r *redisStore) insertRevocation(sha256 revocations.RawSha256, expiresAt time.Time) error {
@@ -53,7 +82,7 @@ func (r *redisStore) fetchUpdates(newVersion uint64) error {
 	r.logger.Debugf("Fetch updates from %d to %d", currentVersion, newVersion)
 
 	for version := currentVersion + 1; version <= newVersion; version++ {
-		encoded, err := client.Get(revocationKey(version)).Result()
+		encoded, err := client.Get(revocationKey(strconv.FormatUint(version, 10))).Result()
 		if err == redis.Nil {
 			r.logger.Debugf("Version %d does not exists in redis", version)
 		} else if err != nil {
