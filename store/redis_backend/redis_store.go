@@ -80,7 +80,7 @@ func (s *redisStore) AddRevocation(sha256 revocations.RawSha256, expiresAt time.
 	return s.insertRevocation(sha256, expiresAt)
 }
 
-func (s *redisStore) ListRevocations(sinceVersion uint64, maxLength uint) (*revocations.RevocationListVO, error) {
+func (s *redisStore) ListRevocations(sinceVersion uint64, maxLength int) (*revocations.RevocationListVO, error) {
 	return s.revocations.GetRevocationsSinceVersion(sinceVersion, maxLength), nil
 }
 

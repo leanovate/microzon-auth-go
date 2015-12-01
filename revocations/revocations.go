@@ -62,24 +62,22 @@ func (r *Revocations) ContainsHash(sha256 RawSha256) bool {
 }
 
 // Get all revocations since a given version
-func (r *Revocations) GetRevocationsSinceVersion(version uint64, maxLength uint) *RevocationListVO {
+func (r *Revocations) GetRevocationsSinceVersion(version uint64, maxLength int) *RevocationListVO {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
-	result := make([]*RevocationVO, 0)
+	result := make([]*RevocationVO, 0, maxLength)
 	iterator := r.revocationsByVersion.Iterator()
-	maxVersion := uint64(0)
 	valid := iterator.Seek(version + 1)
-	for count := uint(0); valid && count < maxLength; count++ {
-		version := iterator.Key().(uint64)
-		if version > maxVersion {
-			maxVersion = version
-		}
+	for valid {
 		result = append(result, iterator.Value().(*RevocationVO))
+		if len(result) >= maxLength {
+			return NewRevocationListVO(iterator.Key().(uint64), result)
+		}
 		valid = iterator.Next()
 	}
 
-	return NewRevocationListVO(maxVersion, result)
+	return NewRevocationListVO(r.maxVersion, result)
 }
 
 func (r *Revocations) CurrentVersion() uint64 {

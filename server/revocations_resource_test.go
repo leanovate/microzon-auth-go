@@ -22,7 +22,7 @@ func TestRevocationsResource(t *testing.T) {
 		Convey("When all recocations are queried", func() {
 			expected := revocations.NewRevokationVO(revocations.RawSha256FromData("somedata"), time.Now())
 			expectedList := revocations.NewRevocationListVO(10, []*revocations.RevocationVO{expected})
-			store.EXPECT().ListRevocations(uint64(0), uint(200)).Return(expectedList, nil)
+			store.EXPECT().ListRevocations(uint64(0), 200).Return(expectedList, nil)
 			recorder := httptest.NewRecorder()
 			request, _ := http.NewRequest("GET", "/v1/revocations", nil)
 			match := routes("/revocations", recorder, request)

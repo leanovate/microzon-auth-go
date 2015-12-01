@@ -6,6 +6,7 @@ import (
 	"github.com/leanovate/microzon-auth-go/config"
 	"github.com/leanovate/microzon-auth-go/logging"
 	"github.com/untoldwind/routing"
+	"runtime"
 )
 
 type internalResource struct {
@@ -14,6 +15,12 @@ type internalResource struct {
 
 type StatusVO struct {
 	Version string `json:"version"`
+}
+
+type HealthVO struct {
+	MaxProcs     int
+	NumGoroutine int
+	Memory       runtime.MemStats
 }
 
 func (s *Server) InternalRoutes() routing.Matcher {
@@ -27,6 +34,12 @@ func (s *Server) InternalRoutes() routing.Matcher {
 				SendError(s.logger, MethodNotAllowed()),
 			),
 		),
+		routing.PrefixSeq("/health",
+			routing.EndSeq(
+				routing.GETFunc(wrap(resource.logger, resource.Health)),
+				SendError(s.logger, MethodNotAllowed()),
+			),
+		),
 	)
 }
 
@@ -34,4 +47,15 @@ func (r *internalResource) Status(req *http.Request) (interface{}, error) {
 	return &StatusVO{
 		Version: config.Version(),
 	}, nil
+}
+
+func (r *internalResource) Health(req *http.Request) (interface{}, error) {
+	health := HealthVO{
+		MaxProcs:     runtime.GOMAXPROCS(0),
+		NumGoroutine: runtime.NumGoroutine(),
+	}
+
+	runtime.ReadMemStats(&health.Memory)
+
+	return health, nil
 }
