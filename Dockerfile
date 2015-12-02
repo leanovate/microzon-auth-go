@@ -1,4 +1,4 @@
-FROM debian:sid
+FROM busybox
 
 ADD ./bin/microzon-auth /opt/
 

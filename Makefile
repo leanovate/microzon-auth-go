@@ -36,6 +36,7 @@ goconvey:
 docker: export GOPATH=${PWD}/Godeps/_workspace:${PWD}/../../../..
 docker: export GOOS=linux
 docker: export GOARCH=amd64
+docker: export CGO_ENABLED=0
 docker:
 	@mkdir -p bin/
 	@echo "--> Running go build (linux, amd64)"
