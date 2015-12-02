@@ -29,6 +29,10 @@ func newRedisRevocationsListener(connector redisConnector, listener common.Revoc
 		logger:         logger,
 	}
 
+	if err := redisListener.updateCurrentVersion(); err != nil {
+		return nil, err
+	}
+
 	go redisListener.startListenRevocationUpdates()
 
 	if err := redisListener.scanRevocations(); err != nil {
@@ -36,6 +40,23 @@ func newRedisRevocationsListener(connector redisConnector, listener common.Revoc
 	}
 
 	return redisListener, nil
+}
+
+func (r *redisRevocationsListener) updateCurrentVersion() error {
+	client, err := r.connector.getClient("")
+	if err != nil {
+		return errors.Wrap(err, 0)
+	}
+	value, err := client.Get(keyRevocationVersionCounter).Result()
+	if err != nil {
+		return errors.Wrap(err, 0)
+	}
+	version, err := strconv.ParseUint(value, 10, 64)
+	if err != nil {
+		return errors.Wrap(err, 0)
+	}
+	r.currentVersion = version
+	return nil
 }
 
 func (r *redisRevocationsListener) scanRevocations() error {
