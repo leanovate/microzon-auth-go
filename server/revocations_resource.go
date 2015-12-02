@@ -2,22 +2,22 @@ package server
 
 import (
 	"github.com/leanovate/microzon-auth-go/logging"
-	"github.com/leanovate/microzon-auth-go/store"
+	"github.com/leanovate/microzon-auth-go/revocations"
 	"github.com/untoldwind/routing"
 	"net/http"
 	"time"
 )
 
 type revocationssResource struct {
-	store  store.Store
-	logger logging.Logger
+	revocationsManager *revocations.RevocationsManager
+	logger             logging.Logger
 }
 
-func RevocationsRoutes(store store.Store, parent logging.Logger) routing.Matcher {
+func RevocationsRoutes(revocationsManager *revocations.RevocationsManager, parent logging.Logger) routing.Matcher {
 	logger := parent.WithContext(map[string]interface{}{"resource": "revocations"})
 	resource := &revocationssResource{
-		store:  store,
-		logger: logger,
+		revocationsManager: revocationsManager,
+		logger:             logger,
 	}
 	return routing.PrefixSeq("/revocations",
 		routing.EndSeq(
@@ -42,8 +42,8 @@ func (r *revocationssResource) QueryRevocations(req *http.Request) (interface{},
 	}
 
 	if wait {
-		observer := r.store.ObserveRevocationsVersion(sinceVersion, time.Duration(timeout)*time.Second)
+		observer := r.revocationsManager.Observe.AddObserverWithTimeout(revocations.ObserveState(sinceVersion), time.Duration(timeout)*time.Second)
 		<-observer
 	}
-	return r.store.ListRevocations(sinceVersion, 200)
+	return r.revocationsManager.GetRevocationsSinceVersion(sinceVersion, 200), nil
 }

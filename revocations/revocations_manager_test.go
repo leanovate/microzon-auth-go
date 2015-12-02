@@ -2,23 +2,33 @@ package revocations
 
 import (
 	"crypto/rand"
+	"github.com/leanovate/microzon-auth-go/common"
+	"github.com/leanovate/microzon-auth-go/config"
 	"github.com/leanovate/microzon-auth-go/logging"
+	"github.com/leanovate/microzon-auth-go/store/memory_backend"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
 )
 
-func TestRevokations(t *testing.T) {
+func TestRevokationsManager(t *testing.T) {
 	Convey("Given an empty revokations list", t, func() {
-		revocations := NewRevocations(logging.NewSimpleLoggerNull())
+		storeConfig := config.NewStoreConfig(logging.NewSimpleLoggerNull())
+		store, err := memory_backend.NewMemoryStore(storeConfig, logging.NewSimpleLoggerNull())
+
+		So(err, ShouldBeNil)
+
+		revocations, err := NewRevocationsManager(store, logging.NewSimpleLoggerNull())
+
+		So(err, ShouldBeNil)
 
 		Convey("When revokation is added", func() {
-			var hash RawSha256
+			var hash common.RawSha256
 			rand.Read(hash[:])
 
-			revocations.AddRevocation(1, hash, time.Now().Add(10*time.Minute))
+			revocations.AddRevocation(hash, time.Now().Add(10*time.Minute))
 
-			So(revocations.ContainsHash(hash), ShouldBeTrue)
+			So(revocations.IsRevoked(hash), ShouldBeTrue)
 			_, ok := revocations.revocationsByVersion.Get(uint64(1))
 			So(ok, ShouldBeTrue)
 			So(revocations.CurrentVersion(), ShouldEqual, 1)
@@ -33,7 +43,7 @@ func TestRevokations(t *testing.T) {
 			Convey("When revokations are cleaned up", func() {
 				revocations.cleanup()
 
-				So(revocations.ContainsHash(hash), ShouldBeTrue)
+				So(revocations.IsRevoked(hash), ShouldBeTrue)
 				_, ok := revocations.revocationsByVersion.Get(uint64(1))
 				So(ok, ShouldBeTrue)
 				So(revocations.CurrentVersion(), ShouldEqual, 1)
@@ -42,13 +52,21 @@ func TestRevokations(t *testing.T) {
 	})
 
 	Convey("Given revokations list with expired entries", t, func() {
-		revocations := NewRevocations(logging.NewSimpleLoggerNull())
+		storeConfig := config.NewStoreConfig(logging.NewSimpleLoggerNull())
+		store, err := memory_backend.NewMemoryStore(storeConfig, logging.NewSimpleLoggerNull())
+
+		So(err, ShouldBeNil)
+
+		revocations, err := NewRevocationsManager(store, logging.NewSimpleLoggerNull())
+
+		So(err, ShouldBeNil)
+
 		past := time.Now().Add(-10 * time.Minute)
 		for i := 0; i < 100; i++ {
-			var hash RawSha256
+			var hash common.RawSha256
 			rand.Read(hash[:])
 
-			revocations.AddRevocation(uint64(i+1), hash, past.Add(time.Duration(i)*time.Second))
+			revocations.AddRevocation(hash, past.Add(time.Duration(i)*time.Second))
 		}
 
 		So(len(revocations.revocationHashes), ShouldEqual, 100)
@@ -73,10 +91,10 @@ func TestRevokations(t *testing.T) {
 		Convey("When some non-expired revokations are added", func() {
 			future := time.Now().Add(10 * time.Minute)
 			for i := 0; i < 50; i++ {
-				var hash RawSha256
+				var hash common.RawSha256
 				rand.Read(hash[:])
 
-				revocations.AddRevocation(uint64(101+i), hash, future.Add(time.Duration(i)*time.Second))
+				revocations.AddRevocation(hash, future.Add(time.Duration(i)*time.Second))
 			}
 
 			So(revocations.revocationHashes, ShouldHaveLength, 150)

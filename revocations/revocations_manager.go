@@ -1,58 +1,56 @@
 package revocations
 
 import (
+	"github.com/leanovate/microzon-auth-go/common"
 	"github.com/leanovate/microzon-auth-go/logging"
+	"github.com/leanovate/microzon-auth-go/store"
 	"github.com/ryszard/goskiplist/skiplist"
 	"sync"
 	"time"
 )
 
 // Cache/manage revocations
-type Revocations struct {
+type RevocationsManager struct {
 	Observe              *ObserverGroup
 	lock                 sync.RWMutex
 	logger               logging.Logger
-	revocationHashes     map[RawSha256]bool
+	revocationHashes     map[common.RawSha256]bool
 	revocationsByVersion *skiplist.SkipList
 	expirationTimeWheel  *timeWheel
 	maxVersion           uint64
+	store                store.Store
 }
 
 // Create a new revocations cache
 // Usually there should only be one
-func NewRevocations(parent logging.Logger) *Revocations {
-	return &Revocations{
+func NewRevocationsManager(store store.Store, parent logging.Logger) (*RevocationsManager, error) {
+	revocations := &RevocationsManager{
 		Observe:          NewObserverGroup(0, parent),
 		logger:           parent.WithContext(map[string]interface{}{"package": "revokations"}),
-		revocationHashes: make(map[RawSha256]bool, 0),
+		revocationHashes: make(map[common.RawSha256]bool, 0),
 		revocationsByVersion: skiplist.NewCustomMap(func(l, r interface{}) bool {
 			return l.(uint64) < r.(uint64)
 		}),
 		expirationTimeWheel: newTimeWheel(600),
 		maxVersion:          0,
+		store:               store,
 	}
+	go revocations.StartCleanup()
+
+	if err := store.SetRevocationsListener(revocations.onNewRevocation); err != nil {
+		return nil, err
+	}
+
+	return revocations, nil
 }
 
-// Add a revocation
-func (r *Revocations) AddRevocation(version uint64, sha256 RawSha256, expiresAt time.Time) {
-	r.lock.Lock()
-	r.revocationHashes[sha256] = true
-	r.revocationsByVersion.Set(version, NewRevokationVO(sha256, expiresAt))
-	triggerNotify := false
-	if version > r.maxVersion {
-		r.maxVersion = version
-		triggerNotify = true
-	}
-	r.lock.Unlock()
-	r.expirationTimeWheel.AddEntry(expiresAt, version)
-	if triggerNotify {
-		r.Observe.Notify(ObserveState(version))
-	}
+func (r *RevocationsManager) AddRevocation(sha256 common.RawSha256, expiresAt time.Time) error {
+	return r.store.AddRevocation(sha256, expiresAt)
 }
 
 // Check if a token hash is contained in the revocations
 // I.e. check if the token has been revoked
-func (r *Revocations) ContainsHash(sha256 RawSha256) bool {
+func (r *RevocationsManager) IsRevoked(sha256 common.RawSha256) bool {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
@@ -62,7 +60,7 @@ func (r *Revocations) ContainsHash(sha256 RawSha256) bool {
 }
 
 // Get all revocations since a given version
-func (r *Revocations) GetRevocationsSinceVersion(version uint64, maxLength int) *RevocationListVO {
+func (r *RevocationsManager) GetRevocationsSinceVersion(version uint64, maxLength int) *RevocationListVO {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
@@ -80,14 +78,14 @@ func (r *Revocations) GetRevocationsSinceVersion(version uint64, maxLength int) 
 	return NewRevocationListVO(r.maxVersion, result)
 }
 
-func (r *Revocations) CurrentVersion() uint64 {
+func (r *RevocationsManager) CurrentVersion() uint64 {
 	r.lock.RLock()
 	r.lock.RUnlock()
 	return r.maxVersion
 }
 
 // Cleanup expired revocations
-func (r *Revocations) cleanup() {
+func (r *RevocationsManager) cleanup() {
 	r.logger.Debug("Do cleanup")
 	expiredVersions := r.expirationTimeWheel.GetExpiredVersions(time.Now())
 
@@ -106,7 +104,7 @@ func (r *Revocations) cleanup() {
 	}
 }
 
-func (r *Revocations) StartCleanup() {
+func (r *RevocationsManager) StartCleanup() {
 	r.logger.Debug("Start cleanup loop")
 	for {
 		diff := time.Now().Unix() - r.expirationTimeWheel.lastCleanup
@@ -114,5 +112,21 @@ func (r *Revocations) StartCleanup() {
 			time.Sleep(1 * time.Second)
 		}
 		r.cleanup()
+	}
+}
+
+func (r *RevocationsManager) onNewRevocation(version uint64, sha256 common.RawSha256, expiresAt time.Time) {
+	r.lock.Lock()
+	r.revocationHashes[sha256] = true
+	r.revocationsByVersion.Set(version, NewRevokationVO(sha256, expiresAt))
+	triggerNotify := false
+	if version > r.maxVersion {
+		r.maxVersion = version
+		triggerNotify = true
+	}
+	r.lock.Unlock()
+	r.expirationTimeWheel.AddEntry(expiresAt, version)
+	if triggerNotify {
+		r.Observe.Notify(ObserveState(version))
 	}
 }

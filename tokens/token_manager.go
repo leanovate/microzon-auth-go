@@ -4,10 +4,10 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-errors/errors"
 	"github.com/leanovate/microzon-auth-go/certificates"
+	"github.com/leanovate/microzon-auth-go/common"
 	"github.com/leanovate/microzon-auth-go/config"
 	"github.com/leanovate/microzon-auth-go/logging"
 	"github.com/leanovate/microzon-auth-go/revocations"
-	"github.com/leanovate/microzon-auth-go/store"
 	"time"
 )
 
@@ -15,16 +15,16 @@ type TokenManager struct {
 	logger             logging.Logger
 	config             *config.TokenConfig
 	certificateManager *certificates.CertificateManager
-	store              store.Store
+	revocationsManager *revocations.RevocationsManager
 }
 
-func NewTokenManager(config *config.TokenConfig, certificateManager *certificates.CertificateManager, store store.Store, parent logging.Logger) *TokenManager {
+func NewTokenManager(config *config.TokenConfig, certificateManager *certificates.CertificateManager, revocationsManager *revocations.RevocationsManager, parent logging.Logger) *TokenManager {
 
 	return &TokenManager{
 		logger:             parent.WithContext(map[string]interface{}{"package": "tokens"}),
 		config:             config,
 		certificateManager: certificateManager,
-		store:              store,
+		revocationsManager: revocationsManager,
 	}
 }
 
@@ -47,9 +47,9 @@ func (t *TokenManager) RefreshToken(token *jwt.Token) (interface{}, error) {
 }
 
 func (t *TokenManager) RevokeToken(token *jwt.Token) (interface{}, error) {
-	sha256 := revocations.RawSha256FromData(token.Raw)
+	sha256 := common.RawSha256FromData(token.Raw)
 	expiresAt := time.Unix((int64)(token.Claims[jwtClaimExpiresAt].(float64)), 0)
-	return nil, t.store.AddRevocation(sha256, expiresAt)
+	return nil, t.revocationsManager.AddRevocation(sha256, expiresAt)
 }
 
 func (r *TokenManager) TokenHandler(token *jwt.Token) (interface{}, error) {
@@ -78,12 +78,8 @@ func (r *TokenManager) verifyCertificate(token *jwt.Token) (interface{}, error) 
 }
 
 func (r *TokenManager) verifyRevocations(token *jwt.Token) error {
-	sha256 := revocations.RawSha256FromData(token.Raw)
-	revoked, err := r.store.IsRevoked(sha256)
-	if err != nil {
-		return err
-	}
-	if revoked {
+	sha256 := common.RawSha256FromData(token.Raw)
+	if r.revocationsManager.IsRevoked(sha256) {
 		return errors.Errorf("Token has been revoked: %s", sha256.String())
 	}
 	return nil

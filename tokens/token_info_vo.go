@@ -4,19 +4,19 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-errors/errors"
 	"github.com/leanovate/microzon-auth-go/certificates"
-	"github.com/leanovate/microzon-auth-go/revocations"
+	"github.com/leanovate/microzon-auth-go/common"
 	"github.com/satori/go.uuid"
 	"time"
 )
 
 type TokenInfoVO struct {
-	Raw       string                `json:"raw"`
-	Id        string                `json:"id"`
-	Realm     string                `json:"realm"`
-	Subject   string                `json:"sub"`
-	ExpiresAt int64                 `json:"exp"`
-	X5T       string                `json:"x5t"`
-	Sha256    revocations.RawSha256 `json:"sha256"`
+	Raw       string           `json:"raw"`
+	Id        string           `json:"id"`
+	Realm     string           `json:"realm"`
+	Subject   string           `json:"sub"`
+	ExpiresAt int64            `json:"exp"`
+	X5T       string           `json:"x5t"`
+	Sha256    common.RawSha256 `json:"sha256"`
 }
 
 const (
@@ -49,7 +49,7 @@ func newTokenInfo(realm, subject string, expiresAt time.Time, signer *certificat
 		Subject:   subject,
 		ExpiresAt: expiresAt.Unix(),
 		X5T:       signer.Thumbprint,
-		Sha256:    revocations.RawSha256FromData(raw),
+		Sha256:    common.RawSha256FromData(raw),
 	}, nil
 }
 
@@ -61,7 +61,7 @@ func CopyFromToken(token *jwt.Token) (interface{}, error) {
 		Subject:   token.Claims[jwtClaimSubject].(string),
 		ExpiresAt: (int64)(token.Claims[jwtClaimExpiresAt].(float64)),
 		X5T:       token.Header[jwtHeaderThumbprint].(string),
-		Sha256:    revocations.RawSha256FromData(token.Raw),
+		Sha256:    common.RawSha256FromData(token.Raw),
 	}, nil
 }
 

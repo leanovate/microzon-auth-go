@@ -6,7 +6,7 @@ package store
 import (
 	x509 "crypto/x509"
 	gomock "github.com/golang/mock/gomock"
-	revocations "github.com/leanovate/microzon-auth-go/revocations"
+	common "github.com/leanovate/microzon-auth-go/common"
 	time "time"
 )
 
@@ -73,7 +73,7 @@ func (_mr *_MockStoreRecorder) RemoveCertificate(arg0 interface{}) *gomock.Call 
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "RemoveCertificate", arg0)
 }
 
-func (_m *MockStore) AddRevocation(sha256 revocations.RawSha256, expiresAt time.Time) error {
+func (_m *MockStore) AddRevocation(sha256 common.RawSha256, expiresAt time.Time) error {
 	ret := _m.ctrl.Call(_m, "AddRevocation", sha256, expiresAt)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -83,46 +83,12 @@ func (_mr *_MockStoreRecorder) AddRevocation(arg0, arg1 interface{}) *gomock.Cal
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "AddRevocation", arg0, arg1)
 }
 
-func (_m *MockStore) ListRevocations(sinceVersion uint64, maxLength int) (*revocations.RevocationListVO, error) {
-	ret := _m.ctrl.Call(_m, "ListRevocations", sinceVersion, maxLength)
-	ret0, _ := ret[0].(*revocations.RevocationListVO)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+func (_m *MockStore) SetRevocationsListener(listener func(uint64, common.RawSha256, time.Time)) {
+	_m.ctrl.Call(_m, "SetRevocationsListener", listener)
 }
 
-func (_mr *_MockStoreRecorder) ListRevocations(arg0, arg1 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "ListRevocations", arg0, arg1)
-}
-
-func (_m *MockStore) CurrentRevocationsVersion() uint64 {
-	ret := _m.ctrl.Call(_m, "CurrentRevocationsVersion")
-	ret0, _ := ret[0].(uint64)
-	return ret0
-}
-
-func (_mr *_MockStoreRecorder) CurrentRevocationsVersion() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "CurrentRevocationsVersion")
-}
-
-func (_m *MockStore) ObserveRevocationsVersion(version uint64, timeout time.Duration) chan revocations.ObserveState {
-	ret := _m.ctrl.Call(_m, "ObserveRevocationsVersion", version, timeout)
-	ret0, _ := ret[0].(chan revocations.ObserveState)
-	return ret0
-}
-
-func (_mr *_MockStoreRecorder) ObserveRevocationsVersion(arg0, arg1 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "ObserveRevocationsVersion", arg0, arg1)
-}
-
-func (_m *MockStore) IsRevoked(sha256 revocations.RawSha256) (bool, error) {
-	ret := _m.ctrl.Call(_m, "IsRevoked", sha256)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-func (_mr *_MockStoreRecorder) IsRevoked(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "IsRevoked", arg0)
+func (_mr *_MockStoreRecorder) SetRevocationsListener(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SetRevocationsListener", arg0)
 }
 
 func (_m *MockStore) Close() {

@@ -3,6 +3,7 @@ package commands
 import (
 	"github.com/codegangsta/cli"
 	"github.com/leanovate/microzon-auth-go/certificates"
+	"github.com/leanovate/microzon-auth-go/revocations"
 	"github.com/leanovate/microzon-auth-go/server"
 	"github.com/leanovate/microzon-auth-go/store"
 	"github.com/leanovate/microzon-auth-go/tokens"
@@ -23,11 +24,17 @@ func serverCommand(ctx *cli.Context, runCtx *runContext) {
 	}
 	defer store.Close()
 
+	revocations, err := revocations.NewRevocationsManager(store, runCtx.logger)
+	if err != nil {
+		runCtx.logger.ErrorErr(err)
+		return
+	}
+
 	certificateManager := certificates.NewCertificateManager(store, runCtx.config.Store, runCtx.logger)
 
-	tokenManager := tokens.NewTokenManager(runCtx.config.Token, certificateManager, store, runCtx.logger)
+	tokenManager := tokens.NewTokenManager(runCtx.config.Token, certificateManager, revocations, runCtx.logger)
 
-	server := server.NewServer(runCtx.config.Server, store, certificateManager, tokenManager, runCtx.logger)
+	server := server.NewServer(runCtx.config.Server, store, certificateManager, revocations, tokenManager, runCtx.logger)
 
 	if err := server.Start(); err != nil {
 		runCtx.logger.ErrorErr(err)

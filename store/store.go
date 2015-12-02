@@ -3,9 +3,9 @@ package store
 import (
 	"crypto/x509"
 	"github.com/go-errors/errors"
+	"github.com/leanovate/microzon-auth-go/common"
 	"github.com/leanovate/microzon-auth-go/config"
 	"github.com/leanovate/microzon-auth-go/logging"
-	"github.com/leanovate/microzon-auth-go/revocations"
 	"github.com/leanovate/microzon-auth-go/store/memory_backend"
 	"github.com/leanovate/microzon-auth-go/store/redis_backend"
 	"strings"
@@ -27,19 +27,12 @@ type Store interface {
 	RemoveCertificate(thumbprint string) error
 
 	// Add a revocation
-	AddRevocation(sha256 revocations.RawSha256, expiresAt time.Time) error
+	// The revocation has to be send to the listener with its version number
+	AddRevocation(sha256 common.RawSha256, expiresAt time.Time) error
 
-	// List all revocations since version
-	ListRevocations(sinceVersion uint64, maxLength int) (*revocations.RevocationListVO, error)
-
-	// Get the current revocations version
-	CurrentRevocationsVersion() uint64
-
-	// Observce a specific version of the revocations list (i.e. wait for change)
-	ObserveRevocationsVersion(version uint64, timeout time.Duration) chan revocations.ObserveState
-
-	// Check if a token is revoked
-	IsRevoked(sha256 revocations.RawSha256) (bool, error)
+	// Set a listener for revocations
+	// The implementation is supposed to send all existing revocations at once
+	SetRevocationsListener(listener common.RevocationsListener) error
 
 	// Close the store
 	Close()

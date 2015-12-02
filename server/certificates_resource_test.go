@@ -16,9 +16,10 @@ func TestCertificatesResource(t *testing.T) {
 	Convey("Given a certicates resource", t, func() {
 		storeConfig := config.NewStoreConfig(logging.NewSimpleLoggerNull())
 		store, err := memory_backend.NewMemoryStore(storeConfig, logging.NewSimpleLoggerNull())
-		certificateManager := certificates.NewCertificateManager(store, storeConfig, logging.NewSimpleLoggerNull())
 
 		So(err, ShouldBeNil)
+
+		certificateManager := certificates.NewCertificateManager(store, storeConfig, logging.NewSimpleLoggerNull())
 
 		selfCert, err := certificateManager.GetSelfCertificate()
 

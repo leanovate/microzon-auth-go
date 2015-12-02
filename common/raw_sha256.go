@@ -1,4 +1,4 @@
-package revocations
+package common
 
 import (
 	"crypto/sha256"

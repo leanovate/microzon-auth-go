@@ -1,7 +1,6 @@
-package revocations
+package common
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -24,7 +23,6 @@ func TestRawSha256(t *testing.T) {
 		Convey("When sha256 is encoded and decoded", func() {
 			encoded := sha256.String()
 
-			Println(base64.URLEncoding.DecodedLen(len(encoded)))
 			decoded, err := RawSha256FromBase64(encoded)
 
 			So(err, ShouldBeNil)
