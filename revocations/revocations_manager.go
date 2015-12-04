@@ -18,12 +18,12 @@ type RevocationsManager struct {
 	revocationsByVersion *skiplist.SkipList
 	expirationTimeWheel  *timeWheel
 	maxVersion           uint64
-	store                store.Store
+	agentStore           store.AgentStore
 }
 
 // Create a new revocations cache
 // Usually there should only be one
-func NewRevocationsManager(store store.Store, parent logging.Logger) (*RevocationsManager, error) {
+func NewRevocationsManager(store store.AgentStore, parent logging.Logger) (*RevocationsManager, error) {
 	revocations := &RevocationsManager{
 		Observe:          NewObserverGroup(0, parent),
 		logger:           parent.WithContext(map[string]interface{}{"package": "revokations"}),
@@ -33,7 +33,7 @@ func NewRevocationsManager(store store.Store, parent logging.Logger) (*Revocatio
 		}),
 		expirationTimeWheel: newTimeWheel(600),
 		maxVersion:          0,
-		store:               store,
+		agentStore:          store,
 	}
 	go revocations.StartCleanup()
 
@@ -42,10 +42,6 @@ func NewRevocationsManager(store store.Store, parent logging.Logger) (*Revocatio
 	}
 
 	return revocations, nil
-}
-
-func (r *RevocationsManager) AddRevocation(sha256 common.RawSha256, expiresAt time.Time) error {
-	return r.store.AddRevocation(sha256, expiresAt)
 }
 
 // Check if a token hash is contained in the revocations

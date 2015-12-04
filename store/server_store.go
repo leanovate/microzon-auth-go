@@ -12,16 +12,12 @@ import (
 	"time"
 )
 
-// Storage backend
-type Store interface {
+// Server storage backend
+type ServerStore interface {
+	AgentStore
+
 	// Add a certificate to the store
 	AddCertificate(thumbprint string, certificate *x509.Certificate) error
-
-	// Find/lookup a certificate by its thumbprint
-	FindCertificate(thumbprint string) (*x509.Certificate, error)
-
-	// Get all certificates
-	AllCertificates() ([]*x509.Certificate, error)
 
 	// Remove a certificate by is thumbprint
 	RemoveCertificate(thumbprint string) error
@@ -29,16 +25,9 @@ type Store interface {
 	// Add a revocation
 	// The revocation has to be send to the listener with its version number
 	AddRevocation(sha256 common.RawSha256, expiresAt time.Time) error
-
-	// Set a listener for revocations
-	// The implementation is supposed to send all existing revocations at once
-	SetRevocationsListener(listener common.RevocationsListener) error
-
-	// Close the store
-	Close()
 }
 
-func NewStore(config *config.StoreConfig, logger logging.Logger) (Store, error) {
+func NewStore(config *config.StoreConfig, logger logging.Logger) (ServerStore, error) {
 	switch strings.ToLower(config.StoreType) {
 	case "memory":
 		return memory_backend.NewMemoryStore(config, logger)

@@ -11,7 +11,7 @@ import (
 )
 
 type tokensResource struct {
-	store        store.Store
+	store        store.ServerStore
 	tokenManager *tokens.TokenManager
 	logger       logging.Logger
 }

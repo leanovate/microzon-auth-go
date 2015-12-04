@@ -26,7 +26,7 @@ func TestRevokationsManager(t *testing.T) {
 			var hash common.RawSha256
 			rand.Read(hash[:])
 
-			revocations.AddRevocation(hash, time.Now().Add(10*time.Minute))
+			store.AddRevocation(hash, time.Now().Add(10*time.Minute))
 
 			So(revocations.IsRevoked(hash), ShouldBeTrue)
 			_, ok := revocations.revocationsByVersion.Get(uint64(1))
@@ -36,7 +36,7 @@ func TestRevokationsManager(t *testing.T) {
 			Convey("When revokation list is queried", func() {
 				revocationList := revocations.GetRevocationsSinceVersion(0, 200)
 
-				So(revocationList.Version, ShouldEqual, 1)
+				So(revocationList.LastVersion, ShouldEqual, 1)
 				So(len(revocationList.Revocations), ShouldEqual, 1)
 			})
 
@@ -66,7 +66,7 @@ func TestRevokationsManager(t *testing.T) {
 			var hash common.RawSha256
 			rand.Read(hash[:])
 
-			revocations.AddRevocation(hash, past.Add(time.Duration(i)*time.Second))
+			store.AddRevocation(hash, past.Add(time.Duration(i)*time.Second))
 		}
 
 		So(len(revocations.revocationHashes), ShouldEqual, 100)
@@ -76,7 +76,7 @@ func TestRevokationsManager(t *testing.T) {
 		Convey("When revokation list is queried", func() {
 			revocationList := revocations.GetRevocationsSinceVersion(50, 200)
 
-			So(revocationList.Version, ShouldEqual, 100)
+			So(revocationList.LastVersion, ShouldEqual, 100)
 			So(revocationList.Revocations, ShouldHaveLength, 50)
 		})
 
@@ -94,7 +94,7 @@ func TestRevokationsManager(t *testing.T) {
 				var hash common.RawSha256
 				rand.Read(hash[:])
 
-				revocations.AddRevocation(hash, future.Add(time.Duration(i)*time.Second))
+				store.AddRevocation(hash, future.Add(time.Duration(i)*time.Second))
 			}
 
 			So(revocations.revocationHashes, ShouldHaveLength, 150)

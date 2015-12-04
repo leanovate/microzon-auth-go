@@ -32,7 +32,7 @@ func serverCommand(ctx *cli.Context, runCtx *runContext) {
 
 	certificateManager := certificates.NewSignerCertificateManager(store, runCtx.config.Store, runCtx.logger)
 
-	tokenManager := tokens.NewTokenManager(runCtx.config.Token, certificateManager, revocations, runCtx.logger)
+	tokenManager := tokens.NewTokenManager(runCtx.config.Token, certificateManager, revocations, store, runCtx.logger)
 
 	server := server.NewServer(runCtx.config.Server, store, certificateManager.CertificateManager, revocations, tokenManager, runCtx.logger)
 

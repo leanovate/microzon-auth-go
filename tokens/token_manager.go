@@ -7,20 +7,23 @@ import (
 	"github.com/leanovate/microzon-auth-go/config"
 	"github.com/leanovate/microzon-auth-go/logging"
 	"github.com/leanovate/microzon-auth-go/revocations"
+	"github.com/leanovate/microzon-auth-go/store"
 	"time"
 )
 
 type TokenManager struct {
 	*TokenValidator
 	signerCertificateManager *certificates.SignerCertificateManager
+	serverStore              store.ServerStore
 }
 
 func NewTokenManager(config *config.TokenConfig, certificateManager *certificates.SignerCertificateManager,
-	revocationsManager *revocations.RevocationsManager, parent logging.Logger) *TokenManager {
+	revocationsManager *revocations.RevocationsManager, serverStore store.ServerStore, parent logging.Logger) *TokenManager {
 
 	return &TokenManager{
 		TokenValidator:           NewTokenValidator(config, certificateManager.CertificateManager, revocationsManager, parent),
 		signerCertificateManager: certificateManager,
+		serverStore:              serverStore,
 	}
 }
 
@@ -45,5 +48,5 @@ func (t *TokenManager) RefreshToken(token *jwt.Token) (interface{}, error) {
 func (t *TokenManager) RevokeToken(token *jwt.Token) (interface{}, error) {
 	sha256 := common.RawSha256FromData(token.Raw)
 	expiresAt := time.Unix((int64)(token.Claims[jwtClaimExpiresAt].(float64)), 0)
-	return nil, t.revocationsManager.AddRevocation(sha256, expiresAt)
+	return nil, t.serverStore.AddRevocation(sha256, expiresAt)
 }

@@ -10,12 +10,14 @@ import (
 
 type SignerCertificateManager struct {
 	*CertificateManager
+	serverStore     store.ServerStore
 	selfCertificate *CertWithKey
 }
 
-func NewSignerCertificateManager(store store.Store, config *config.StoreConfig, parent logging.Logger) *SignerCertificateManager {
+func NewSignerCertificateManager(serverStore store.ServerStore, config *config.StoreConfig, parent logging.Logger) *SignerCertificateManager {
 	return &SignerCertificateManager{
-		CertificateManager: NewCertificateManager(store, config, parent),
+		CertificateManager: NewCertificateManager(serverStore, config, parent),
+		serverStore:        serverStore,
 	}
 }
 
@@ -37,7 +39,7 @@ func (s *SignerCertificateManager) GetSelfCertificate() (*CertWithKey, error) {
 				return nil, err
 			}
 			s.certificates[selfCert.Thumbprint] = selfCert.Certificate
-			if err := s.store.AddCertificate(selfCert.Thumbprint, selfCert.Certificate); err != nil {
+			if err := s.serverStore.AddCertificate(selfCert.Thumbprint, selfCert.Certificate); err != nil {
 				return nil, err
 			}
 			s.selfCertificate = selfCert
@@ -57,5 +59,5 @@ func (s *SignerCertificateManager) Close() error {
 	if s.selfCertificate == nil {
 		return nil
 	}
-	return s.store.RemoveCertificate(s.selfCertificate.Thumbprint)
+	return s.serverStore.RemoveCertificate(s.selfCertificate.Thumbprint)
 }

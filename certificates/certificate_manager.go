@@ -11,15 +11,15 @@ import (
 type CertificateManager struct {
 	lock         sync.RWMutex
 	certificates map[string]*x509.Certificate
-	store        store.Store
+	agentStore   store.AgentStore
 	logger       logging.Logger
 	config       *config.StoreConfig
 }
 
-func NewCertificateManager(store store.Store, config *config.StoreConfig, parent logging.Logger) *CertificateManager {
+func NewCertificateManager(agentStore store.AgentStore, config *config.StoreConfig, parent logging.Logger) *CertificateManager {
 	return &CertificateManager{
 		certificates: make(map[string]*x509.Certificate, 0),
-		store:        store,
+		agentStore:   agentStore,
 		logger:       parent.WithContext(map[string]interface{}{"package": "certificates"}),
 		config:       config,
 	}
@@ -46,7 +46,7 @@ func (s *CertificateManager) FindCertificate(thumbprint string) (*x509.Certifica
 	}
 	s.lock.RUnlock()
 
-	if certificate, err := s.store.FindCertificate(thumbprint); err != nil {
+	if certificate, err := s.agentStore.FindCertificate(thumbprint); err != nil {
 		return nil, err
 	} else if certificate != nil {
 		s.lock.Lock()

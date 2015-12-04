@@ -34,7 +34,7 @@ func TestRevocationsResource(t *testing.T) {
 			var actual revocations.RevocationListVO
 			err := json.NewDecoder(recorder.Body).Decode(&actual)
 			So(err, ShouldBeNil)
-			So(actual.Version, ShouldEqual, 0)
+			So(actual.LastVersion, ShouldEqual, 0)
 			So(actual.Revocations, ShouldBeEmpty)
 		})
 	})

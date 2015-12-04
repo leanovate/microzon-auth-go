@@ -16,7 +16,7 @@ import (
 
 type Server struct {
 	config             *config.ServerConfig
-	store              store.Store
+	store              store.ServerStore
 	certificateManager *certificates.CertificateManager
 	revocations        *revocations.RevocationsManager
 	tokenManager       *tokens.TokenManager
@@ -24,7 +24,7 @@ type Server struct {
 	logger             logging.Logger
 }
 
-func NewServer(config *config.ServerConfig, store store.Store, certificateManager *certificates.CertificateManager, revocations *revocations.RevocationsManager, tokenManager *tokens.TokenManager, logger logging.Logger) *Server {
+func NewServer(config *config.ServerConfig, store store.ServerStore, certificateManager *certificates.CertificateManager, revocations *revocations.RevocationsManager, tokenManager *tokens.TokenManager, logger logging.Logger) *Server {
 	return &Server{
 		config:             config,
 		store:              store,

@@ -64,4 +64,5 @@ genmocks:
 	@echo "--> Generate mocks"
 	@go build -v -o bin/mockgen github.com/golang/mock/mockgen
 	bin/mockgen -source=./logging/logger.go -destination=./logging/logger_mock.go -package logging
-	bin/mockgen -source=./store/store.go -destination=./store/store_mock.go -package store
+	bin/mockgen -destination=./store/agent_store_mock.go -package store github.com/leanovate/microzon-auth-go/store AgentStore
+	bin/mockgen -destination=./store/server_store_mock.go -package store github.com/leanovate/microzon-auth-go/store ServerStore
