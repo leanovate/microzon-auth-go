@@ -6,25 +6,25 @@ import (
 	"time"
 )
 
-type timeWheelEntry struct {
-	expiresAt int64
-	version   uint64
-}
-
-type timeWheelHeap []timeWheelEntry
+type timeWheelHeap []*RevocationVO
 
 func (h timeWheelHeap) Len() int           { return len(h) }
-func (h timeWheelHeap) Less(i, j int) bool { return h[i].expiresAt < h[j].expiresAt }
+func (h timeWheelHeap) Less(i, j int) bool { return h[i].ExpiresAt < h[j].ExpiresAt }
 func (h timeWheelHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
 func (h *timeWheelHeap) Push(x interface{}) {
-	*h = append(*h, x.(timeWheelEntry))
+	*h = append(*h, x.(*RevocationVO))
 }
 
 func (h *timeWheelHeap) Pop() interface{} {
 	old := *h
 	n := len(old)
 	x := old[n-1]
-	*h = old[0 : n-1]
+	old[n-1] = nil
+	if 2*n < cap(old) {
+		*h = append(timeWheelHeap(nil), old[0:n-1]...)
+	} else {
+		*h = old[0 : n-1]
+	}
 	return x
 }
 
@@ -33,20 +33,20 @@ type timeWheelNode struct {
 	heap timeWheelHeap
 }
 
-func (t *timeWheelNode) addEntry(expiresAt int64, version uint64) {
+func (t *timeWheelNode) addEntry(revocation *RevocationVO) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
-	heap.Push(&t.heap, timeWheelEntry{expiresAt: expiresAt, version: version})
+	heap.Push(&t.heap, revocation)
 }
 
-func (t *timeWheelNode) getExpiredVersions(now int64) []uint64 {
+func (t *timeWheelNode) getExpiredRevocations(now int64) []*RevocationVO {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
-	result := make([]uint64, 0)
-	for len(t.heap) > 0 && t.heap[0].expiresAt < now {
-		result = append(result, heap.Pop(&t.heap).(timeWheelEntry).version)
+	result := make([]*RevocationVO, 0)
+	for len(t.heap) > 0 && t.heap[0].ExpiresAt < now {
+		result = append(result, heap.Pop(&t.heap).(*RevocationVO))
 	}
 
 	return result
@@ -70,15 +70,14 @@ func (t *timeWheel) calculateIndex(time int64) uint32 {
 	return uint32(time % int64(t.size))
 }
 
-func (t *timeWheel) AddEntry(expiresAt time.Time, version uint64) {
-	expiresAtUnix := expiresAt.Unix()
-	index := t.calculateIndex(expiresAtUnix)
-	t.wheel[index].addEntry(expiresAtUnix, version)
+func (t *timeWheel) AddEntry(revocation *RevocationVO) {
+	index := t.calculateIndex(revocation.ExpiresAt)
+	t.wheel[index].addEntry(revocation)
 }
 
-func (t *timeWheel) GetExpiredVersions(now time.Time) []uint64 {
+func (t *timeWheel) getExpiredRevocations(now time.Time) []*RevocationVO {
 	nowUnix := now.Unix()
-	result := make([]uint64, 0)
+	result := make([]*RevocationVO, 0)
 
 	var to, from uint32
 	if nowUnix <= t.lastCleanup || nowUnix-t.lastCleanup >= int64(t.size) {
@@ -92,7 +91,7 @@ func (t *timeWheel) GetExpiredVersions(now time.Time) []uint64 {
 		}
 	}
 	for i := from; i < to; i++ {
-		result = append(result, t.wheel[i%t.size].getExpiredVersions(nowUnix)...)
+		result = append(result, t.wheel[i%t.size].getExpiredRevocations(nowUnix)...)
 	}
 	t.lastCleanup = nowUnix
 

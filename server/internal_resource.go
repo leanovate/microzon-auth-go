@@ -40,6 +40,12 @@ func (s *Server) InternalRoutes() routing.Matcher {
 				SendError(s.logger, MethodNotAllowed()),
 			),
 		),
+		routing.PrefixSeq("/gc",
+			routing.EndSeq(
+				routing.PUTFunc(wrap(resource.logger, resource.TriggerGC)),
+				SendError(s.logger, MethodNotAllowed()),
+			),
+		),
 	)
 }
 
@@ -58,4 +64,10 @@ func (r *internalResource) Health(req *http.Request) (interface{}, error) {
 	runtime.ReadMemStats(&health.Memory)
 
 	return health, nil
+}
+
+func (r *internalResource) TriggerGC(req *http.Request) (interface{}, error) {
+	runtime.GC()
+
+	return nil, nil
 }

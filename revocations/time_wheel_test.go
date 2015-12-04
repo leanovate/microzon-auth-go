@@ -2,6 +2,7 @@ package revocations
 
 import (
 	"container/heap"
+	"github.com/leanovate/microzon-auth-go/common"
 	. "github.com/smartystreets/goconvey/convey"
 	"math/rand"
 	"testing"
@@ -16,7 +17,7 @@ func TestTimeWheel(t *testing.T) {
 		Convey("When expirations are added", func() {
 			start := now.Add(1 * time.Minute)
 			for i := 0; i < 1000; i++ {
-				node.addEntry(start.Add(time.Duration(i)*time.Minute).Unix(), (uint64)(i))
+				node.addEntry(NewRevokationVO(uint64(i), common.RawSha256FromData("data"), start.Add(time.Duration(i)*time.Minute)))
 			}
 
 			So(node.heap, ShouldHaveLength, 1000)
@@ -44,17 +45,17 @@ func TestTimeWheel(t *testing.T) {
 			start := now.Add(1 * time.Minute)
 			for i := 0; i < 1000; i++ {
 				diff := rand.Intn(20000)
-				node.addEntry(start.Add(time.Duration(diff)*time.Second).Unix(), (uint64)(i))
+				node.addEntry(NewRevokationVO(uint64(i), common.RawSha256FromData("data"), start.Add(time.Duration(diff)*time.Second)))
 			}
 
 			So(node.heap, ShouldHaveLength, 1000)
 			So(node.getExpiredVersions(now.Unix()), ShouldHaveLength, 0)
 
-			last := heap.Pop(&node.heap).(timeWheelEntry)
+			last := heap.Pop(&node.heap).(*RevocationVO)
 			var i int
 			for i = 1; i < 1000; i++ {
-				current := heap.Pop(&node.heap).(timeWheelEntry)
-				if current.expiresAt < last.expiresAt {
+				current := heap.Pop(&node.heap).(*RevocationVO)
+				if current.ExpiresAt < last.ExpiresAt {
 					break
 				}
 				last = current
@@ -70,7 +71,7 @@ func TestTimeWheel(t *testing.T) {
 		Convey("When expirations are added", func() {
 			start := now.Add(1 * time.Minute)
 			for i := 0; i < 10000; i++ {
-				timeWheel.AddEntry(start.Add(time.Duration(i+1)*time.Second), (uint64)(i))
+				timeWheel.AddEntry(NewRevokationVO(uint64(i), common.RawSha256FromData("data"), start.Add(time.Duration(i+1)*time.Second)))
 			}
 
 			So(timeWheel.GetExpiredVersions(now), ShouldHaveLength, 0)
