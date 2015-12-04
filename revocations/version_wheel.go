@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	versionWheelSize = 0x40000
-	versionWheelMask = 0x3ffff
+	versionWheelSize = 0x20000
+	versionWheelMask = 0x1ffff
 )
 
 type versionWheelNode []*RevocationVO

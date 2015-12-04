@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	hashWheelSize = 0x40000
-	hashWheelMask = 0x3ffff
+	hashWheelSize = 0x20000
+	hashWheelMask = 0x1ffff
 )
 
 type hashWheelNode []*RevocationVO
