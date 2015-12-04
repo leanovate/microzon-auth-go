@@ -30,11 +30,11 @@ func serverCommand(ctx *cli.Context, runCtx *runContext) {
 		return
 	}
 
-	certificateManager := certificates.NewCertificateManager(store, runCtx.config.Store, runCtx.logger)
+	certificateManager := certificates.NewSignerCertificateManager(store, runCtx.config.Store, runCtx.logger)
 
 	tokenManager := tokens.NewTokenManager(runCtx.config.Token, certificateManager, revocations, runCtx.logger)
 
-	server := server.NewServer(runCtx.config.Server, store, certificateManager, revocations, tokenManager, runCtx.logger)
+	server := server.NewServer(runCtx.config.Server, store, certificateManager.CertificateManager, revocations, tokenManager, runCtx.logger)
 
 	if err := server.Start(); err != nil {
 		runCtx.logger.ErrorErr(err)
