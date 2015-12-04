@@ -118,7 +118,7 @@ func (r *RevocationsManager) StartCleanup() {
 func (r *RevocationsManager) onNewRevocation(version uint64, sha256 common.RawSha256, expiresAt time.Time) {
 	r.lock.Lock()
 	r.revocationHashes[sha256] = true
-	r.revocationsByVersion.Set(version, NewRevokationVO(sha256, expiresAt))
+	r.revocationsByVersion.Set(version, NewRevokationVO(version, sha256, expiresAt))
 	triggerNotify := false
 	if version > r.maxVersion {
 		r.maxVersion = version
