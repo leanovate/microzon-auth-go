@@ -10,8 +10,9 @@ import (
 
 const insertRevocationScript = `
 local version = redis.call("INCR", KEYS[1])
-redis.call("SETEX", "revocations:version:" .. version, ARGV[3],  ARGV[1] .. ";" .. ARGV[2] .. ";" .. version)
-redis.call("PUBLISH", KEYS[2], version)
+local value =  ARGV[1] .. ";" .. ARGV[2] .. ";" .. version
+redis.call("SETEX", "revocations:version:" .. version, ARGV[3], value)
+redis.call("PUBLISH", KEYS[2], value)
 return version
 `
 

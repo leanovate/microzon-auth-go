@@ -15,21 +15,21 @@ const keyRevocationsPublish = "revocations"
 const keyRevocationVersionCounter = "revocations:version"
 
 type redisRevocationsListener struct {
-	currentVersion uint64
-	connector      redisConnector
-	listener       common.RevocationsListener
-	logger         logging.Logger
+	lastVersion uint64
+	connector   redisConnector
+	listener    common.RevocationsListener
+	logger      logging.Logger
 }
 
 func newRedisRevocationsListener(connector redisConnector, listener common.RevocationsListener, logger logging.Logger) (*redisRevocationsListener, error) {
 	redisListener := &redisRevocationsListener{
-		currentVersion: 0,
+		lastVersion: 0,
 		connector:      connector,
 		listener:       listener,
 		logger:         logger,
 	}
 
-	if err := redisListener.updateCurrentVersion(); err != nil {
+	if err := redisListener.fetchLastVersion(); err != nil {
 		return nil, err
 	}
 
@@ -42,7 +42,7 @@ func newRedisRevocationsListener(connector redisConnector, listener common.Revoc
 	return redisListener, nil
 }
 
-func (r *redisRevocationsListener) updateCurrentVersion() error {
+func (r *redisRevocationsListener) fetchLastVersion() error {
 	client, err := r.connector.getClient("")
 	if err != nil {
 		return errors.Wrap(err, 0)
@@ -57,7 +57,7 @@ func (r *redisRevocationsListener) updateCurrentVersion() error {
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}
-	r.currentVersion = version
+	r.lastVersion = version
 	return nil
 }
 
@@ -92,15 +92,23 @@ func (r *redisRevocationsListener) scanRevocations() error {
 	return nil
 }
 
-func (r *redisRevocationsListener) fetchUpdates(newVersion uint64) error {
+func (r *redisRevocationsListener) decodeAndFillGaps(encoded string) error {
+	currentVersion := atomic.LoadUint64(&r.lastVersion)
+
+	parts := strings.Split(encoded, ";")
+	newVersion, err := strconv.ParseUint(parts[2], 10, 64)
+	if err != nil {
+		return err
+	}
+
 	client, err := r.connector.getClient(keyRevocationVersionCounter)
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}
 
-	r.logger.Debugf("Fetch updates from %d to %d", r.currentVersion, newVersion)
+	for version := currentVersion + 1; version < newVersion; version++ {
+		r.logger.Debugf("Fetch gaps from %d", version)
 
-	for version := atomic.LoadUint64(&r.currentVersion) + 1; version <= newVersion; version++ {
 		encoded, err := client.Get(revocationKey(strconv.FormatUint(version, 10))).Result()
 		if err == redis.Nil {
 			r.logger.Debugf("Version %d does not exists in redis", version)
@@ -112,7 +120,8 @@ func (r *redisRevocationsListener) fetchUpdates(newVersion uint64) error {
 			}
 		}
 	}
-	return nil
+
+	return r.decodeAndAddRevocation(encoded)
 }
 
 func (r *redisRevocationsListener) decodeAndAddRevocation(encoded string) error {
@@ -133,9 +142,9 @@ func (r *redisRevocationsListener) decodeAndAddRevocation(encoded string) error 
 		return err
 	}
 
-	currentVersion := atomic.LoadUint64(&r.currentVersion)
+	currentVersion := atomic.LoadUint64(&r.lastVersion)
 	if version > currentVersion {
-		atomic.CompareAndSwapUint64(&r.currentVersion, currentVersion, version)
+		atomic.CompareAndSwapUint64(&r.lastVersion, currentVersion, version)
 	}
 	r.listener(version, sha256, time.Unix(expiresAt, 0))
 	return nil
@@ -154,11 +163,7 @@ func (r *redisRevocationsListener) listenRevocationUpdates() error {
 	for {
 		if message, err := subscription.ReceiveMessage(); err == nil {
 			r.logger.Debugf("Received revocation update: %s", message.Payload)
-			if version, err := strconv.ParseUint(message.Payload, 10, 64); err == nil {
-				if err := r.fetchUpdates(version); err != nil {
-					r.logger.ErrorErr(err)
-				}
-			} else {
+			if err := r.decodeAndFillGaps(message.Payload); err != nil {
 				r.logger.ErrorErr(err)
 			}
 		} else {
