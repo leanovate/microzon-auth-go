@@ -48,7 +48,9 @@ func (r *redisRevocationsListener) updateCurrentVersion() error {
 		return errors.Wrap(err, 0)
 	}
 	value, err := client.Get(keyRevocationVersionCounter).Result()
-	if err != nil {
+	if err == redis.Nil {
+		return nil
+	} else if err != nil {
 		return errors.Wrap(err, 0)
 	}
 	version, err := strconv.ParseUint(value, 10, 64)
