@@ -24,9 +24,9 @@ type redisRevocationsListener struct {
 func newRedisRevocationsListener(connector redisConnector, listener common.RevocationsListener, logger logging.Logger) (*redisRevocationsListener, error) {
 	redisListener := &redisRevocationsListener{
 		lastVersion: 0,
-		connector:      connector,
-		listener:       listener,
-		logger:         logger,
+		connector:   connector,
+		listener:    listener,
+		logger:      logger,
 	}
 
 	if err := redisListener.fetchLastVersion(); err != nil {
