@@ -1,9 +1,5 @@
 package revocations
 
-import (
-	"sync"
-)
-
 const (
 	versionWheelSize = 0x20000
 	versionWheelMask = 0x1ffff
@@ -49,7 +45,6 @@ func (v versionWheelNode) nextCandidate(version uint64) *RevocationVO {
 }
 
 type versionWheel struct {
-	lock        sync.RWMutex
 	lastVersion uint64
 	wheel       []versionWheelNode
 }
@@ -68,9 +63,6 @@ func (w *versionWheel) calculateIndex(version uint64) uint32 {
 func (w *versionWheel) addRevocation(revocation *RevocationVO) {
 	index := w.calculateIndex(revocation.Version)
 
-	w.lock.Lock()
-	defer w.lock.Unlock()
-
 	w.wheel[index].addRevocation(revocation)
 
 	if w.lastVersion < revocation.Version {
@@ -81,25 +73,16 @@ func (w *versionWheel) addRevocation(revocation *RevocationVO) {
 func (w *versionWheel) getVersion(version uint64) *RevocationVO {
 	index := w.calculateIndex(version)
 
-	w.lock.RLock()
-	defer w.lock.RUnlock()
-
 	return w.wheel[index].getVersion(version)
 }
 
 func (w *versionWheel) removeVersion(version uint64) {
 	index := w.calculateIndex(version)
 
-	w.lock.Lock()
-	defer w.lock.Unlock()
-
 	w.wheel[index].removeVersion(version)
 }
 
 func (w *versionWheel) next(version uint64) *RevocationVO {
-	w.lock.RLock()
-	defer w.lock.RUnlock()
-
 	if version >= w.lastVersion {
 		return nil
 	}
@@ -120,17 +103,7 @@ func (w *versionWheel) next(version uint64) *RevocationVO {
 	return candidate
 }
 
-func (w *versionWheel) getLastVersion() uint64 {
-	w.lock.RLock()
-	defer w.lock.RUnlock()
-
-	return w.lastVersion
-}
-
 func (w *versionWheel) count() int {
-	w.lock.RLock()
-	defer w.lock.RUnlock()
-
 	count := 0
 	for _, node := range w.wheel {
 		count += len(node)

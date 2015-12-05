@@ -16,8 +16,9 @@ type singleRedisConnector struct {
 
 func newRedisConnector(config *config.StoreConfig) redisConnector {
 	opts := &redis.Options{
-		Addr: config.RedisAddress,
-		DB:   0,
+		Addr:     config.RedisAddress,
+		PoolSize: 20,
+		DB:       0,
 	}
 	return &singleRedisConnector{
 		client: redis.NewClient(opts),

@@ -76,13 +76,15 @@ func (r *redisRevocationsListener) scanRevocations() error {
 		}
 		cursor = nextCursor
 		if len(keys) > 0 {
-			encodedRevocations, err := client.MGet(keys...).Result()
+			values, err := client.MGet(keys...).Result()
 			if err != nil {
 				return errors.Wrap(err, 0)
 			}
-			for _, encodedRevocation := range encodedRevocations {
-				if err := r.decodeAndAddRevocation(encodedRevocation.(string)); err != nil {
-					return err
+			for _, value := range values {
+				if encodedRevocation, ok := value.(string); ok {
+					if err := r.decodeAndAddRevocation(encodedRevocation); err != nil {
+						return err
+					}
 				}
 			}
 		}
