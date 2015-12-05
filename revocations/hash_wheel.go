@@ -40,6 +40,8 @@ func (v hashWheelNode) containsHash(hash common.RawSha256) bool {
 	return false
 }
 
+// Actually this is not much more than a classic hash map
+// But since we already have two other wheels so a third one will not hurt
 type hashWheel struct {
 	lock  sync.RWMutex
 	wheel []hashWheelNode
@@ -85,4 +87,15 @@ func (w *hashWheel) containsHash(hash common.RawSha256) bool {
 	defer w.lock.RUnlock()
 
 	return w.wheel[index].containsHash(hash)
+}
+
+func (w *hashWheel) count() int {
+	w.lock.RLock()
+	defer w.lock.RUnlock()
+
+	count := 0
+	for _, node := range w.wheel {
+		count += len(node)
+	}
+	return count
 }

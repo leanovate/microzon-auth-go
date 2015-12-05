@@ -72,6 +72,7 @@ func (t *timeWheel) calculateIndex(time int64) uint32 {
 
 func (t *timeWheel) AddEntry(revocation *RevocationVO) {
 	index := t.calculateIndex(revocation.ExpiresAt)
+
 	t.wheel[index].addEntry(revocation)
 }
 
