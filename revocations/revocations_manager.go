@@ -4,31 +4,23 @@ import (
 	"github.com/leanovate/microzon-auth-go/common"
 	"github.com/leanovate/microzon-auth-go/logging"
 	"github.com/leanovate/microzon-auth-go/store"
-	"sync"
 	"time"
 )
 
 // Cache/manage revocations
 type RevocationsManager struct {
-	Observe              *ObserverGroup
-	lock                 sync.RWMutex
-	logger               logging.Logger
-	revocationHashes     *hashWheel
+	*RevocationsValidator
 	revocationsByVersion *versionWheel
-	expirationTimeWheel  *timeWheel
-	agentStore           store.AgentStore
+	serverStore          store.ServerStore
 }
 
 // Create a new revocations cache
 // Usually there should only be one
-func NewRevocationsManager(store store.AgentStore, parent logging.Logger) (*RevocationsManager, error) {
+func NewRevocationsManager(store store.ServerStore, parent logging.Logger) (*RevocationsManager, error) {
 	revocations := &RevocationsManager{
-		Observe:              NewObserverGroup(0, parent),
-		logger:               parent.WithContext(map[string]interface{}{"package": "revokations"}),
-		revocationHashes:     newHashWheel(17),
+		RevocationsValidator: NewRevocationsValidator(store, parent),
 		revocationsByVersion: newVersionWheel(17),
-		expirationTimeWheel:  newTimeWheel(600),
-		agentStore:           store,
+		serverStore:          store,
 	}
 	go revocations.StartCleanup()
 
@@ -39,13 +31,9 @@ func NewRevocationsManager(store store.AgentStore, parent logging.Logger) (*Revo
 	return revocations, nil
 }
 
-// Check if a token hash is contained in the revocations
-// I.e. check if the token has been revoked
-func (r *RevocationsManager) IsRevoked(sha256 common.RawSha256) bool {
-	r.lock.RLock()
-	defer r.lock.RUnlock()
-
-	return r.revocationHashes.containsHash(sha256)
+// Add a revocation
+func (r *RevocationsManager) AddRevocation(sha256 common.RawSha256, expiresAt time.Time) error {
+	return r.serverStore.AddRevocation(sha256, expiresAt)
 }
 
 // Get all revocations since a given version

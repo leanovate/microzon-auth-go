@@ -9,11 +9,11 @@ import (
 )
 
 type certificatesResource struct {
-	certificateManager *certificates.CertificateManager
+	certificateManager *certificates.CertificateValidator
 	logger             logging.Logger
 }
 
-func CertificatesRoutes(certificateManager *certificates.CertificateManager, parent logging.Logger) routing.Matcher {
+func CertificatesRoutes(certificateManager *certificates.CertificateValidator, parent logging.Logger) routing.Matcher {
 	logger := parent.WithContext(map[string]interface{}{"resource": "certificates"})
 	resource := &certificatesResource{
 		certificateManager: certificateManager,

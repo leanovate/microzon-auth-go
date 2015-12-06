@@ -12,19 +12,19 @@ import (
 )
 
 type TokenValidator struct {
-	logger             logging.Logger
-	config             *config.TokenConfig
-	certificateManager *certificates.CertificateManager
-	revocationsManager *revocations.RevocationsManager
+	logger               logging.Logger
+	config               *config.TokenConfig
+	certificateManager   *certificates.CertificateValidator
+	revocationsValidator *revocations.RevocationsValidator
 }
 
-func NewTokenValidator(config *config.TokenConfig, certificateManager *certificates.CertificateManager,
-	revocationsManager *revocations.RevocationsManager, parent logging.Logger) *TokenValidator {
+func NewTokenValidator(config *config.TokenConfig, certificateManager *certificates.CertificateValidator,
+	revocationsValidator *revocations.RevocationsValidator, parent logging.Logger) *TokenValidator {
 	return &TokenValidator{
-		logger:             parent.WithContext(map[string]interface{}{"package": "tokens"}),
-		config:             config,
-		certificateManager: certificateManager,
-		revocationsManager: revocationsManager,
+		logger:               parent.WithContext(map[string]interface{}{"package": "tokens"}),
+		config:               config,
+		certificateManager:   certificateManager,
+		revocationsValidator: revocationsValidator,
 	}
 }
 
@@ -53,9 +53,9 @@ func (r *TokenValidator) verifyCertificate(token *jwt.Token) (interface{}, error
 	}
 }
 
-func (r *TokenManager) verifyRevocations(token *jwt.Token) error {
+func (r *TokenValidator) verifyRevocations(token *jwt.Token) error {
 	sha256 := common.RawSha256FromData(token.Raw)
-	if r.revocationsManager.IsRevoked(sha256) {
+	if r.revocationsValidator.IsRevoked(sha256) {
 		return errors.Errorf("Token has been revoked: %s", sha256.String())
 	}
 	return nil

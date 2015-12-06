@@ -1,11 +1,11 @@
 package revocations
 
 import (
+	"fmt"
 	"github.com/leanovate/microzon-auth-go/common"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
-	"fmt"
 )
 
 func TestHashWheel(t *testing.T) {

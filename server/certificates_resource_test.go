@@ -19,13 +19,13 @@ func TestCertificatesResource(t *testing.T) {
 
 		So(err, ShouldBeNil)
 
-		certificateManager := certificates.NewSignerCertificateManager(store, storeConfig, logging.NewSimpleLoggerNull())
+		certificateManager := certificates.NewCertificateManager(store, storeConfig, logging.NewSimpleLoggerNull())
 
 		selfCert, err := certificateManager.GetSelfCertificate()
 
 		So(err, ShouldBeNil)
 
-		routes := CertificatesRoutes(certificateManager.CertificateManager, logging.NewSimpleLoggerNull())
+		routes := CertificatesRoutes(certificateManager.CertificateValidator, logging.NewSimpleLoggerNull())
 
 		Convey("When all certificates are queried requested", func() {
 			recorder := httptest.NewRecorder()
