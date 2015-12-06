@@ -7,7 +7,6 @@ import (
 	"gopkg.in/redis.v3"
 	"strconv"
 	"strings"
-	"sync/atomic"
 	"time"
 )
 
@@ -15,7 +14,7 @@ const keyRevocationsPublish = "revocations"
 const keyRevocationVersionCounter = "revocations:version"
 
 type redisRevocationsListener struct {
-	lastVersion uint64
+	lastVersion lastVersion
 	connector   redisConnector
 	listener    common.RevocationsListener
 	logger      logging.Logger
@@ -23,10 +22,9 @@ type redisRevocationsListener struct {
 
 func newRedisRevocationsListener(connector redisConnector, listener common.RevocationsListener, logger logging.Logger) (*redisRevocationsListener, error) {
 	redisListener := &redisRevocationsListener{
-		lastVersion: 0,
-		connector:   connector,
-		listener:    listener,
-		logger:      logger,
+		connector: connector,
+		listener:  listener,
+		logger:    logger,
 	}
 
 	if err := redisListener.fetchLastVersion(); err != nil {
@@ -57,7 +55,7 @@ func (r *redisRevocationsListener) fetchLastVersion() error {
 	if err != nil {
 		return errors.Wrap(err, 0)
 	}
-	r.lastVersion = version
+	r.lastVersion.update(version)
 	return nil
 }
 
@@ -93,7 +91,7 @@ func (r *redisRevocationsListener) scanRevocations() error {
 }
 
 func (r *redisRevocationsListener) decodeAndFillGaps(encoded string) error {
-	currentVersion := atomic.LoadUint64(&r.lastVersion)
+	currentVersion := r.lastVersion.get()
 
 	parts := strings.Split(encoded, ";")
 	newVersion, err := strconv.ParseUint(parts[2], 10, 64)
@@ -142,11 +140,9 @@ func (r *redisRevocationsListener) decodeAndAddRevocation(encoded string) error 
 		return err
 	}
 
-	currentVersion := atomic.LoadUint64(&r.lastVersion)
-	if version > currentVersion {
-		atomic.CompareAndSwapUint64(&r.lastVersion, currentVersion, version)
-	}
+	r.lastVersion.update(version)
 	r.listener(version, sha256, time.Unix(expiresAt, 0))
+
 	return nil
 }
 

@@ -23,11 +23,12 @@ func (v versionWheelNode) getVersion(version uint64) *RevocationVO {
 func (v *versionWheelNode) removeVersion(version uint64) {
 	for i, revocation := range *v {
 		if revocation.Version == version {
-			if 2*len(*v) < cap(*v) {
-				*v = append(make(versionWheelNode, 0, len(*v)-1), (*v)[:i]...)
-				*v = append(*v, (*v)[i+1:]...)
+			n := len(*v)
+			if 2*n < cap(*v) {
+				newNode := append(make(versionWheelNode, 0, n-1), (*v)[:i]...)
+				*v = append(newNode, (*v)[i+1:]...)
 			} else {
-				*v, (*v)[len(*v)-1] = append((*v)[:i], (*v)[i+1:]...), nil
+				*v, (*v)[n-1] = append((*v)[:i], (*v)[i+1:]...), nil
 			}
 			return
 		}

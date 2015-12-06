@@ -18,12 +18,13 @@ func (v *hashWheelNode) addRevocation(revocation *RevocationVO) {
 func (v *hashWheelNode) removeHash(hash common.RawSha256) {
 	for i, revocation := range *v {
 		if revocation.Sha256 == hash {
-			(*v)[i] = (*v)[len(*v)-1]
-			if 2*len(*v) < cap(*v) {
-				*v = append(hashWheelNode(nil), (*v)[:len(*v)-1]...)
+			n := len(*v)
+			(*v)[i] = (*v)[n-1]
+			(*v)[n-1] = nil
+			if 2*n < cap(*v) {
+				*v = append(hashWheelNode(nil), (*v)[:n-1]...)
 			} else {
-				(*v)[len(*v)-1] = nil
-				*v = (*v)[:len(*v)-1]
+				*v = (*v)[:n-1]
 			}
 			return
 		}
