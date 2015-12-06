@@ -17,10 +17,14 @@ func BenchmarkRevocationsManagerFill(b *testing.B) {
 	revocations, _ := NewRevocationsManager(store, logging.NewSimpleLoggerNull())
 
 	now := time.Now()
+	hashes := make([]common.RawSha256, b.N)
+	for i := 0; i < b.N; i++ {
+		hashes[i] = common.RawSha256FromData(fmt.Sprintf("data%d", i))
+	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		store.AddRevocation(common.RawSha256FromData(fmt.Sprintf("data%d", i)), now)
-		if !revocations.IsRevoked(common.RawSha256FromData(fmt.Sprintf("data%d", i))) {
+		store.AddRevocation(hashes[i], now)
+		if !revocations.IsRevoked(hashes[i]) {
 			b.Fail()
 		}
 	}
