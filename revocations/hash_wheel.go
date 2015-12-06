@@ -4,11 +4,6 @@ import (
 	"github.com/leanovate/microzon-auth-go/common"
 )
 
-const (
-	hashWheelSize = 0x20000
-	hashWheelMask = 0x1ffff
-)
-
 type hashWheelNode []*RevocationVO
 
 func (v *hashWheelNode) addRevocation(revocation *RevocationVO) {
@@ -43,12 +38,19 @@ func (v hashWheelNode) containsHash(hash common.RawSha256) bool {
 // Actually this is not much more than a classic hash map
 // But since we already have two other wheels so a third one will not hurt
 type hashWheel struct {
+	size  uint32
+	mask  uint32
 	wheel []hashWheelNode
 }
 
-func newHashWheel() *hashWheel {
+func newHashWheel(bits uint) *hashWheel {
+	size := uint32(1 << bits)
+	mask := uint32(size - 1)
+
 	return &hashWheel{
-		wheel: make([]hashWheelNode, hashWheelSize),
+		size:  size,
+		mask:  mask,
+		wheel: make([]hashWheelNode, size),
 	}
 }
 
@@ -58,7 +60,7 @@ func (w *hashWheel) calculateIndex(hash common.RawSha256) uint32 {
 		index ^= uint32(value)
 		index <<= 1
 	}
-	return index & hashWheelMask
+	return index & w.mask
 }
 
 func (w *hashWheel) addRevocation(revocation *RevocationVO) {

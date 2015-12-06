@@ -1,10 +1,5 @@
 package revocations
 
-const (
-	versionWheelSize = 0x20000
-	versionWheelMask = 0x1ffff
-)
-
 type versionWheelNode []*RevocationVO
 
 func (v *versionWheelNode) addRevocation(revocation *RevocationVO) {
@@ -46,19 +41,26 @@ func (v versionWheelNode) nextCandidate(version uint64) *RevocationVO {
 }
 
 type versionWheel struct {
+	size        uint32
+	mask        uint64
 	lastVersion uint64
 	wheel       []versionWheelNode
 }
 
-func newVersionWheel() *versionWheel {
+func newVersionWheel(bits uint) *versionWheel {
+	size := uint32(1 << bits)
+	mask := uint64(size - 1)
+
 	return &versionWheel{
+		size:        size,
+		mask:        mask,
 		lastVersion: 0,
-		wheel:       make([]versionWheelNode, versionWheelSize),
+		wheel:       make([]versionWheelNode, size),
 	}
 }
 
 func (w *versionWheel) calculateIndex(version uint64) uint32 {
-	return uint32(version & versionWheelMask)
+	return uint32(version & w.mask)
 }
 
 func (w *versionWheel) addRevocation(revocation *RevocationVO) {
@@ -89,10 +91,10 @@ func (w *versionWheel) next(version uint64) *RevocationVO {
 	}
 	var candidate *RevocationVO
 	index := w.calculateIndex(version)
-	for i := uint32(0); i < versionWheelSize; i++ {
-		if nextCandidate := w.wheel[(index+i)&versionWheelMask].nextCandidate(version); nextCandidate != nil {
+	for i := uint32(0); i < w.size; i++ {
+		if nextCandidate := w.wheel[(index+i)&uint32(w.mask)].nextCandidate(version); nextCandidate != nil {
 			// this only works since versions come in an ordered manner with little to no gaps
-			if nextCandidate.Version < version+versionWheelSize {
+			if nextCandidate.Version < version+uint64(w.size) {
 				return nextCandidate
 			}
 			if candidate == nil || nextCandidate.Version < candidate.Version {

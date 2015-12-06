@@ -25,8 +25,8 @@ func NewRevocationsManager(store store.AgentStore, parent logging.Logger) (*Revo
 	revocations := &RevocationsManager{
 		Observe:              NewObserverGroup(0, parent),
 		logger:               parent.WithContext(map[string]interface{}{"package": "revokations"}),
-		revocationHashes:     newHashWheel(),
-		revocationsByVersion: newVersionWheel(),
+		revocationHashes:     newHashWheel(17),
+		revocationsByVersion: newVersionWheel(17),
 		expirationTimeWheel:  newTimeWheel(600),
 		agentStore:           store,
 	}

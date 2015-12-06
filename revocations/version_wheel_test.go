@@ -39,19 +39,19 @@ func TestVersionWheel(t *testing.T) {
 				So(cap(node), ShouldBeLessThan, 600)
 
 				var version uint64
-				for version = 600; version < 1000 - 1; version++ {
+				for version = 600; version < 1000-1; version++ {
 					next := node.nextCandidate(version)
 
-					if next == nil || next.Version != version + 1 {
+					if next == nil || next.Version != version+1 {
 						break
 					}
 				}
-				So(version, ShouldEqual, 1000 - 1)
+				So(version, ShouldEqual, 1000-1)
 				So(node.nextCandidate(999), ShouldBeNil)
 			})
 
 			Convey("When odds are remove", func() {
-				for i := 1; i < 1000; i+=2 {
+				for i := 1; i < 1000; i += 2 {
 					node.removeVersion(uint64(i))
 				}
 
@@ -59,22 +59,24 @@ func TestVersionWheel(t *testing.T) {
 				So(cap(node), ShouldBeLessThan, 600)
 
 				var version uint64
-				for version = 0; version < 1000 - 2; version+=2 {
+				for version = 0; version < 1000-2; version += 2 {
 					next := node.nextCandidate(version)
 
-					if next == nil || next.Version != version + 2 {
+					if next == nil || next.Version != version+2 {
 						break
 					}
 				}
-				So(version, ShouldEqual, 1000 - 2)
+				So(version, ShouldEqual, 1000-2)
 				So(node.nextCandidate(999), ShouldBeNil)
 			})
 		})
 	})
 
 	Convey("Given an empty version wheel", t, func() {
-		versionWheel := newVersionWheel()
+		versionWheel := newVersionWheel(8)
 
+		So(versionWheel.size, ShouldEqual, 0x100)
+		So(versionWheel.mask, ShouldEqual, 0xff)
 		So(versionWheel.count(), ShouldEqual, 0)
 		So(versionWheel.getVersion(uint64(5000)), ShouldBeNil)
 
