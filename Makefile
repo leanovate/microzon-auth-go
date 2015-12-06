@@ -24,6 +24,11 @@ test: deps
 	@go test -v ./...
 	@$(MAKE) vet
 
+bench: export GOPATH=${PWD}/Godeps/_workspace:${PWD}/../../../..
+bench: deps
+	@echo "--> Running tests with benchmark"
+	@go test -v -bench=. -benchmem ./revocations
+
 format: export GOPATH=${PWD}/Godeps/_workspace:${PWD}/../../../..
 format: deps
 	@echo "--> Running go fmt"
