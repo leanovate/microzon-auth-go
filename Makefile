@@ -21,6 +21,7 @@ updatedeps: deps
 
 test: export GOPATH=${PWD}/Godeps/_workspace:${PWD}/../../../..
 test: deps
+	@echo "--> Running tests"
 	@go test -v ./...
 	@$(MAKE) vet
 

@@ -23,7 +23,7 @@ func BenchmarkRevocationsManagerFill(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		store.AddRevocation(hashes[i], now)
+		revocations.AddRevocation(hashes[i], now)
 		if !revocations.IsRevoked(hashes[i]) {
 			b.Fail()
 		}
