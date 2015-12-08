@@ -10,6 +10,8 @@ import (
 )
 
 // Cache/manage revocations
+// Benchmark:
+// BenchmarkRevocationsManagerFill-8	 1000000	      2832 ns/op	    1038 B/op	      12 allocs/op
 type RevocationsManager struct {
 	Observe              *ObserverGroup
 	lock                 sync.RWMutex
