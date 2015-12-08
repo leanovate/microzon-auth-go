@@ -40,6 +40,12 @@ func (v versionWheelNode) nextCandidate(version uint64) *RevocationVO {
 	return nil
 }
 
+// Version wheel
+// Benchmark
+// BenchmarkVersionWheelFill17-8    	 3000000	       607 ns/op	      70 B/op	       1 allocs/op
+// BenchmarkVersionWheelGet17-8     	10000000	      1403 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkVersionWheelRemove17-8  	10000000	       996 ns/op	       8 B/op	       0 allocs/op
+// BenchmarkVersionWheelFill18-8    	 3000000	       548 ns/op	      69 B/op	       1 allocs/op
 type versionWheel struct {
 	size        uint32
 	mask        uint64

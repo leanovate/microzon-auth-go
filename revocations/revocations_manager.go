@@ -8,6 +8,8 @@ import (
 )
 
 // Cache/manage revocations
+// Benchmark
+// BenchmarkRevocationsManagerFill-8	 1000000	      1653 ns/op	     234 B/op	       7 allocs/op
 type RevocationsManager struct {
 	*RevocationsValidator
 	revocationsByVersion *versionWheel
